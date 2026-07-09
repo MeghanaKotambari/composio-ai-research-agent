@@ -3,116 +3,287 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Composio AI Research Agent - Dashboard</title>
+    <title>AI Product Research Agent - Case Study</title>
     <link rel="stylesheet" href="styles.css">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
-    <header>
-        <div class="container">
-            <h1>Composio AI Research Agent</h1>
-            <p class="subtitle">SaaS Application Analysis Dashboard</p>
+    <!-- Loading State -->
+    <div id="loading" class="loading-screen" role="status" aria-label="Loading research data">
+        <div class="loader-container">
+            <div class="loader-ring"></div>
+            <div class="loader-ring"></div>
+            <div class="loader-ring"></div>
         </div>
-    </header>
+        <p class="loading-text">Loading Research Data...</p>
+    </div>
 
-    <main class="container">
-        <!-- Overview Section -->
-        <section class="overview">
-            <h2>Overview</h2>
-            <div class="stats-grid">
+    <!-- Error State -->
+    <div id="error-state" class="error-screen" style="display: none;">
+        <h2>No Data Available</h2>
+        <p>Run the research pipeline first to generate data.</p>
+        <code>python -m agent.main research --provider mock</code>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="navbar" role="navigation" aria-label="Main navigation">
+        <div class="nav-container">
+            <a href="#" class="logo">AI Research Agent</a>
+            <ul class="nav-links">
+                <li><a href="#hero">Overview</a></li>
+                <li><a href="#summary">Insights</a></li>
+                <li><a href="#metrics">Metrics</a></li>
+                <li><a href="#charts">Analysis</a></li>
+                <li><a href="#opportunities">Opportunities</a></li>
+                <li><a href="#workflow">Workflow</a></li>
+                <li><a href="#verification">Verification</a></li>
+                <li><a href="#data">Data</a></li>
+                <li><a href="#architecture">Architecture</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section id="hero" class="hero">
+        <div class="hero-content">
+            <h1 class="hero-title">AI Product Research Agent</h1>
+            <p class="hero-subtitle">Automated Research, Verification & Pattern Discovery Across 100 SaaS Applications</p>
+            <div class="hero-stats">
                 <div class="stat-card">
-                    <div class="stat-value" id="total-apps">0</div>
+                    <div class="stat-value" id="total-apps">—</div>
                     <div class="stat-label">Total Apps</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-value" id="verified-apps">0</div>
-                    <div class="stat-label">Verified</div>
+                    <div class="stat-value" id="verification-rate">—</div>
+                    <div class="stat-label">Verification Rate</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-value" id="avg-confidence">0%</div>
+                    <div class="stat-value" id="avg-confidence">—</div>
                     <div class="stat-label">Avg Confidence</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-value" id="mcp-support">0%</div>
-                    <div class="stat-label">MCP Support</div>
-                </div>
-            </div>
-        </section>
-
-        <!-- Charts Section -->
-        <section class="charts">
-            <h2>Analytics</h2>
-            <div class="charts-grid">
-                <div class="chart-container">
-                    <h3>Category Distribution</h3>
-                    <canvas id="category-chart"></canvas>
-                </div>
-                <div class="chart-container">
-                    <h3>Authentication Methods</h3>
-                    <canvas id="auth-chart"></canvas>
-                </div>
-                <div class="chart-container">
-                    <h3>Buildability Assessment</h3>
-                    <canvas id="buildability-chart"></canvas>
-                </div>
-                <div class="chart-container">
-                    <h3>Confidence Score Distribution</h3>
-                    <canvas id="confidence-chart"></canvas>
-                </div>
-            </div>
-        </section>
-
-        <!-- Applications Table -->
-        <section class="apps-section">
-            <h2>Applications</h2>
-            <div class="controls">
-                <input type="text" id="search-input" placeholder="Search applications...">
-                <select id="category-filter">
-                    <option value="">All Categories</option>
-                </select>
-                <select id="buildability-filter">
-                    <option value="">All Buildability</option>
-                    <option value="high">High</option>
-                    <option value="medium">Medium</option>
-                    <option value="low">Low</option>
-                </select>
-            </div>
-            <div class="table-container">
-                <table id="apps-table">
-                    <thead>
-                        <tr>
-                            <th>Name</th>
-                            <th>Category</th>
-                            <th>Description</th>
-                            <th>Auth Methods</th>
-                            <th>Self-Serve</th>
-                            <th>MCP Support</th>
-                            <th>Buildability</th>
-                            <th>Confidence</th>
-                            <th>Status</th>
-                        </tr>
-                    </thead>
-                    <tbody id="apps-tbody">
-                        <!-- Data will be populated by JavaScript -->
-                    </tbody>
-                </table>
-            </div>
-        </section>
-
-        <!-- Details Modal -->
-        <div id="details-modal" class="modal">
-            <div class="modal-content">
-                <span class="close">&times;</span>
-                <div id="modal-body">
-                    <!-- Modal content will be populated by JavaScript -->
+                    <div class="stat-value" id="research-time">—</div>
+                    <div class="stat-label">Research Time</div>
                 </div>
             </div>
         </div>
-    </main>
+    </section>
 
-    <footer>
-        <div class="container">
-            <p>Composio AI Research Agent - Built for AI Product Ops Intern Take-Home Assignment</p>
+    <!-- Executive Summary -->
+    <section id="summary" class="section">
+        <div class="section-header">
+            <h2 class="section-title">Executive Summary</h2>
+            <p class="section-description">Key insights from the research across 100 SaaS applications</p>
+        </div>
+        <div class="insights-grid" id="insights-container">
+            <div class="empty-state">No insights available. Run research to generate insights.</div>
+        </div>
+    </section>
+
+    <!-- Dashboard Metrics -->
+    <section id="metrics" class="section">
+        <div class="section-header">
+            <h2 class="section-title">Dashboard Metrics</h2>
+            <p class="section-description">Core metrics from the research dataset</p>
+        </div>
+        <div class="metrics-grid" id="metrics-container">
+            <div class="empty-state">No metrics available. Run research to generate metrics.</div>
+        </div>
+    </section>
+
+    <!-- Interactive Charts -->
+    <section id="charts" class="section">
+        <div class="section-header">
+            <h2 class="section-title">Interactive Analysis</h2>
+            <p class="section-description">Visual breakdown of research findings</p>
+        </div>
+        <div class="charts-grid">
+            <div class="chart-card">
+                <h3>Authentication Distribution</h3>
+                <canvas id="authChart" aria-label="Authentication distribution chart"></canvas>
+            </div>
+            <div class="chart-card">
+                <h3>Category Distribution</h3>
+                <canvas id="categoryChart" aria-label="Category distribution chart"></canvas>
+            </div>
+            <div class="chart-card">
+                <h3>API Surface</h3>
+                <canvas id="apiChart" aria-label="API surface chart"></canvas>
+            </div>
+            <div class="chart-card">
+                <h3>Accessibility</h3>
+                <canvas id="accessChart" aria-label="Accessibility chart"></canvas>
+            </div>
+            <div class="chart-card">
+                <h3>Buildability</h3>
+                <canvas id="buildabilityChart" aria-label="Buildability chart"></canvas>
+            </div>
+            <div class="chart-card">
+                <h3>Top Blockers</h3>
+                <canvas id="blockersChart" aria-label="Top blockers chart"></canvas>
+            </div>
+        </div>
+    </section>
+
+    <!-- Opportunity Matrix -->
+    <section id="opportunities" class="section">
+        <div class="section-header">
+            <h2 class="section-title">Opportunity Matrix</h2>
+            <p class="section-description">Integration opportunities categorized by effort</p>
+        </div>
+        <div class="opportunity-grid">
+            <div class="opportunity-column">
+                <h3 class="easy">Easy Wins</h3>
+                <p class="opportunity-desc">Self-serve with high buildability and no blockers</p>
+                <div id="easy-wins" class="opportunity-list">
+                    <div class="empty-state">No data available</div>
+                </div>
+            </div>
+            <div class="opportunity-column">
+                <h3 class="medium">Medium Effort</h3>
+                <p class="opportunity-desc">Self-serve but requires more work</p>
+                <div id="medium-effort" class="opportunity-list">
+                    <div class="empty-state">No data available</div>
+                </div>
+            </div>
+            <div class="opportunity-column">
+                <h3 class="hard">High Effort</h3>
+                <p class="opportunity-desc">Requires sales contact or has blockers</p>
+                <div id="high-effort" class="opportunity-list">
+                    <div class="empty-state">No data available</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Agent Workflow -->
+    <section id="workflow" class="section">
+        <div class="section-header">
+            <h2 class="section-title">Agent Workflow</h2>
+            <p class="section-description">The automated research pipeline</p>
+        </div>
+        <div class="workflow-diagram" id="workflow-container">
+            <!-- Dynamically populated -->
+        </div>
+    </section>
+
+    <!-- Verification -->
+    <section id="verification" class="section">
+        <div class="section-header">
+            <h2 class="section-title">Verification Engine</h2>
+            <p class="section-description">Deterministic verification without LLM calls</p>
+        </div>
+        <div class="verification-grid" id="verification-container">
+            <div class="empty-state">No verification data available</div>
+        </div>
+        <div class="verification-explanation">
+            <h3>How Verification Works</h3>
+            <p>Each field is cross-referenced against documentation using keyword matching. No LLM calls are made during verification, ensuring deterministic and reproducible results. Apps with low verification scores are flagged for manual review.</p>
+        </div>
+    </section>
+
+    <!-- Interactive Data Table -->
+    <section id="data" class="section">
+        <div class="section-header">
+            <h2 class="section-title">Research Data</h2>
+            <p class="section-description">All researched applications with search and filter</p>
+        </div>
+        <div class="table-controls">
+            <input type="text" id="search-input" placeholder="Search apps..." aria-label="Search applications">
+            <select id="category-filter" aria-label="Filter by category">
+                <option value="">All Categories</option>
+            </select>
+            <select id="auth-filter" aria-label="Filter by auth type">
+                <option value="">All Auth Types</option>
+            </select>
+        </div>
+        <div class="table-container">
+            <table id="apps-table">
+                <thead>
+                    <tr>
+                        <th scope="col">Name</th>
+                        <th scope="col">Category</th>
+                        <th scope="col">Auth Methods</th>
+                        <th scope="col">Self-Serve</th>
+                        <th scope="col">Buildability</th>
+                        <th scope="col">Confidence</th>
+                        <th scope="col">Evidence</th>
+                    </tr>
+                </thead>
+                <tbody id="table-body">
+                    <tr><td colspan="7" class="empty-state">No data available. Run research first.</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <!-- Architecture -->
+    <section id="architecture" class="section">
+        <div class="section-header">
+            <h2 class="section-title">Architecture</h2>
+            <p class="section-description">Clean, modular design with dependency injection</p>
+        </div>
+        <div class="architecture-diagram" id="architecture-container">
+            <!-- Dynamically populated -->
+        </div>
+    </section>
+
+    <!-- Limitations -->
+    <section id="limitations" class="section">
+        <div class="section-header">
+            <h2 class="section-title">Limitations</h2>
+        </div>
+        <div class="limitations-content">
+            <ul class="limitations-list">
+                <li>Possible LLM hallucinations in extracted data</li>
+                <li>Need for manual review on low-confidence results</li>
+                <li>Enterprise documentation may require authentication</li>
+                <li>Rate limits on web research and LLM API calls</li>
+                <li>Static analysis cannot capture dynamic API behavior</li>
+            </ul>
+        </div>
+    </section>
+
+    <!-- Future Improvements -->
+    <section id="future" class="section">
+        <div class="section-header">
+            <h2 class="section-title">Future Improvements</h2>
+        </div>
+        <div class="future-grid">
+            <div class="future-card">
+                <h3>Automatic Browser Agent</h3>
+                <p>Playwright-based browser automation for JavaScript-heavy sites</p>
+            </div>
+            <div class="future-card">
+                <h3>Parallel Research</h3>
+                <p>Concurrent processing of multiple applications</p>
+            </div>
+            <div class="future-card">
+                <h3>Continuous Monitoring</h3>
+                <p>Scheduled re-research to track API changes</p>
+            </div>
+            <div class="future-card">
+                <h3>MCP Discovery</h3>
+                <p>Automated detection of MCP support in documentation</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-content">
+            <div class="footer-section">
+                <h4>Tech Stack</h4>
+                <p>Python, Pydantic, Rich, Chart.js, BeautifulSoup</p>
+            </div>
+            <div class="footer-section">
+                <h4>Repository</h4>
+                <a href="https://github.com/MeghanaKotambari/composio-ai-research-agent">GitHub</a>
+            </div>
+            <div class="footer-section">
+                <h4>Author</h4>
+                <p>Composio AI Product Ops</p>
+            </div>
         </div>
     </footer>
 
