@@ -53,11 +53,16 @@ class Settings:
         self.REQUEST_TIMEOUT: int = int(os.getenv("REQUEST_TIMEOUT", "30"))
         self.RATE_LIMIT_DELAY: float = float(os.getenv("RATE_LIMIT_DELAY", "1.0"))
 
+        # LLM Provider settings
+        self.LLM_PROVIDER: str = os.getenv("LLM_PROVIDER", "mock")
+
         # Future API keys (placeholders for extensibility)
         self.OPENAI_API_KEY: Optional[str] = os.getenv("OPENAI_API_KEY")
         self.ANTHROPIC_API_KEY: Optional[str] = os.getenv("ANTHROPIC_API_KEY")
         self.GOOGLE_API_KEY: Optional[str] = os.getenv("GOOGLE_API_KEY")
         self.SERPER_API_KEY: Optional[str] = os.getenv("SERPER_API_KEY")
+        self.OPENROUTER_API_KEY: Optional[str] = os.getenv("OPENROUTER_API_KEY")
+        self.MODEL_NAME: str = os.getenv("MODEL_NAME", "openai/gpt-4o-mini")
         self.PLAYWRIGHT_HEADLESS: bool = os.getenv("PLAYWRIGHT_HEADLESS", "true").lower() == "true"
 
         # Ensure output directories exist
@@ -88,6 +93,7 @@ class Settings:
             "anthropic": self.ANTHROPIC_API_KEY,
             "google": self.GOOGLE_API_KEY,
             "serper": self.SERPER_API_KEY,
+            "openrouter": self.OPENROUTER_API_KEY,
         }
         return key_mapping.get(provider.lower())
 
