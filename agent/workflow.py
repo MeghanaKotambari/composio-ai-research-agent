@@ -534,10 +534,13 @@ class ResearchWorkflow:
                 confidence = self.estimate_confidence(app_research)
                 app_research.confidence_score = confidence
 
-        # Step 10: Set manual review flag
+        # Step 10: Set verification status
         if verification.get("manual_review_required", False):
             app_research.verification_status = "manual_review"
             logger.warning(f"Manual review required for {app_name}")
+        else:
+            app_research.verification_status = "verified"
+            logger.info(f"Verified: {app_name}")
 
         # Step 11: Set evidence_url from the documentation URL (never placeholder)
         if docs_url and docs_url != app.get("website", ""):
