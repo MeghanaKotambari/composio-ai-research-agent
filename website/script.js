@@ -2,11 +2,11 @@
 
 // Data paths (relative to website/)
 const DATA_PATHS = {
-    statistics: '../output/reports/statistics.json',
-    insights: '../output/reports/insights.json',
-    clusters: '../output/reports/clusters.json',
-    results: '../output/reports/results.json',
-    manual_review: '../output/reports/manual_review.json',
+    statistics: 'data/statistics.json',
+    insights: 'data/insights.json',
+    clusters: 'data/clusters.json',
+    results: 'data/results.json',
+    manual_review: 'data/manual_review.json',
 };
 
 // State
