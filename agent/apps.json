@@ -1,0 +1,546 @@
+{
+  "description": "List of 100 SaaS applications to be researched",
+  "total_apps": 100,
+  "apps": [
+    {
+      "name": "Slack",
+      "website": "https://slack.com",
+      "category": "communication"
+    },
+    {
+      "name": "Notion",
+      "website": "https://notion.so",
+      "category": "productivity"
+    },
+    {
+      "name": "Salesforce",
+      "website": "https://salesforce.com",
+      "category": "crm"
+    },
+    {
+      "name": "HubSpot",
+      "website": "https://hubspot.com",
+      "category": "crm"
+    },
+    {
+      "name": "Shopify",
+      "website": "https://shopify.com",
+      "category": "ecommerce"
+    },
+    {
+      "name": "Stripe",
+      "website": "https://stripe.com",
+      "category": "payment"
+    },
+    {
+      "name": "GitHub",
+      "website": "https://github.com",
+      "category": "developer_tools"
+    },
+    {
+      "name": "GitLab",
+      "website": "https://gitlab.com",
+      "category": "developer_tools"
+    },
+    {
+      "name": "Jira",
+      "website": "https://atlassian.com/software/jira",
+      "category": "project_management"
+    },
+    {
+      "name": "Asana",
+      "website": "https://asana.com",
+      "category": "project_management"
+    },
+    {
+      "name": "Monday.com",
+      "website": "https://monday.com",
+      "category": "project_management"
+    },
+    {
+      "name": "Zoom",
+      "website": "https://zoom.us",
+      "category": "communication"
+    },
+    {
+      "name": "Microsoft Teams",
+      "website": "https://teams.microsoft.com",
+      "category": "communication"
+    },
+    {
+      "name": "Google Workspace",
+      "website": "https://workspace.google.com",
+      "category": "productivity"
+    },
+    {
+      "name": "Dropbox",
+      "website": "https://dropbox.com",
+      "category": "cloud_infrastructure"
+    },
+    {
+      "name": "AWS",
+      "website": "https://aws.amazon.com",
+      "category": "cloud_infrastructure"
+    },
+    {
+      "name": "Google Cloud",
+      "website": "https://cloud.google.com",
+      "category": "cloud_infrastructure"
+    },
+    {
+      "name": "Azure",
+      "website": "https://azure.microsoft.com",
+      "category": "cloud_infrastructure"
+    },
+    {
+      "name": "Twilio",
+      "website": "https://twilio.com",
+      "category": "communication"
+    },
+    {
+      "name": "SendGrid",
+      "website": "https://sendgrid.com",
+      "category": "marketing"
+    },
+    {
+      "name": "Mailchimp",
+      "website": "https://mailchimp.com",
+      "category": "marketing"
+    },
+    {
+      "name": "Intercom",
+      "website": "https://intercom.com",
+      "category": "communication"
+    },
+    {
+      "name": "Zendesk",
+      "website": "https://zendesk.com",
+      "category": "communication"
+    },
+    {
+      "name": "Freshdesk",
+      "website": "https://freshdesk.com",
+      "category": "communication"
+    },
+    {
+      "name": "Pipedrive",
+      "website": "https://pipedrive.com",
+      "category": "crm"
+    },
+    {
+      "name": "Zoho CRM",
+      "website": "https://zoho.com/crm",
+      "category": "crm"
+    },
+    {
+      "name": "Mailgun",
+      "website": "https://mailgun.com",
+      "category": "marketing"
+    },
+    {
+      "name": "Postmark",
+      "website": "https://postmarkapp.com",
+      "category": "marketing"
+    },
+    {
+      "name": "Contentful",
+      "website": "https://contentful.com",
+      "category": "developer_tools"
+    },
+    {
+      "name": "Sanity",
+      "website": "https://sanity.io",
+      "category": "developer_tools"
+    },
+    {
+      "name": "Strapi",
+      "website": "https://strapi.io",
+      "category": "developer_tools"
+    },
+    {
+      "name": "Supabase",
+      "website": "https://supabase.com",
+      "category": "database"
+    },
+    {
+      "name": "Firebase",
+      "website": "https://firebase.google.com",
+      "category": "database"
+    },
+    {
+      "name": "MongoDB Atlas",
+      "website": "https://mongodb.com/atlas",
+      "category": "database"
+    },
+    {
+      "name": "PostgreSQL",
+      "website": "https://postgresql.org",
+      "category": "database"
+    },
+    {
+      "name": "MySQL",
+      "website": "https://mysql.com",
+      "category": "database"
+    },
+    {
+      "name": "Redis",
+      "website": "https://redis.io",
+      "category": "database"
+    },
+    {
+      "name": "Elasticsearch",
+      "website": "https://elastic.co",
+      "category": "analytics"
+    },
+    {
+      "name": "Datadog",
+      "website": "https://datadoghq.com",
+      "category": "analytics"
+    },
+    {
+      "name": "New Relic",
+      "website": "https://newrelic.com",
+      "category": "analytics"
+    },
+    {
+      "name": "Sentry",
+      "website": "https://sentry.io",
+      "category": "developer_tools"
+    },
+    {
+      "name": "PagerDuty",
+      "website": "https://pagerduty.com",
+      "category": "developer_tools"
+    },
+    {
+      "name": "Linear",
+      "website": "https://linear.app",
+      "category": "project_management"
+    },
+    {
+      "name": "Height",
+      "website": "https://height.app",
+      "category": "project_management"
+    },
+    {
+      "name": "ClickUp",
+      "website": "https://clickup.com",
+      "category": "project_management"
+    },
+    {
+      "name": "Wrike",
+      "website": "https://wrike.com",
+      "category": "project_management"
+    },
+    {
+      "name": "Trello",
+      "website": "https://trello.com",
+      "category": "project_management"
+    },
+    {
+      "name": "Airtable",
+      "website": "https://airtable.com",
+      "category": "productivity"
+    },
+    {
+      "name": "Coda",
+      "website": "https://coda.io",
+      "category": "productivity"
+    },
+    {
+      "name": "Confluence",
+      "website": "https://atlassian.com/software/confluence",
+      "category": "productivity"
+    },
+    {
+      "name": "Miro",
+      "website": "https://miro.com",
+      "category": "productivity"
+    },
+    {
+      "name": "Figma",
+      "website": "https://figma.com",
+      "category": "productivity"
+    },
+    {
+      "name": "Adobe Creative Cloud",
+      "website": "https://adobe.com/creativecloud",
+      "category": "media"
+    },
+    {
+      "name": "Canva",
+      "website": "https://canva.com",
+      "category": "media"
+    },
+    {
+      "name": "WordPress",
+      "website": "https://wordpress.org",
+      "category": "developer_tools"
+    },
+    {
+      "name": "Webflow",
+      "website": "https://webflow.com",
+      "category": "developer_tools"
+    },
+    {
+      "name": "Wix",
+      "website": "https://wix.com",
+      "category": "developer_tools"
+    },
+    {
+      "name": "Squarespace",
+      "website": "https://squarespace.com",
+      "category": "developer_tools"
+    },
+    {
+      "name": "BigCommerce",
+      "website": "https://bigcommerce.com",
+      "category": "ecommerce"
+    },
+    {
+      "name": "WooCommerce",
+      "website": "https://woocommerce.com",
+      "category": "ecommerce"
+    },
+    {
+      "name": "Magento",
+      "website": "https://magento.com",
+      "category": "ecommerce"
+    },
+    {
+      "name": "PayPal",
+      "website": "https://paypal.com",
+      "category": "payment"
+    },
+    {
+      "name": "Square",
+      "website": "https://squareup.com",
+      "category": "payment"
+    },
+    {
+      "name": "Razorpay",
+      "website": "https://razorpay.com",
+      "category": "payment"
+    },
+    {
+      "name": "Plaid",
+      "website": "https://plaid.com",
+      "category": "finance"
+    },
+    {
+      "name": "QuickBooks",
+      "website": "https://quickbooks.intuit.com",
+      "category": "finance"
+    },
+    {
+      "name": "Xero",
+      "website": "https://xero.com",
+      "category": "finance"
+    },
+    {
+      "name": "FreshBooks",
+      "website": "https://freshbooks.com",
+      "category": "finance"
+    },
+    {
+      "name": "BambooHR",
+      "website": "https://bamboohr.com",
+      "category": "hr"
+    },
+    {
+      "name": "Workday",
+      "website": "https://workday.com",
+      "category": "hr"
+    },
+    {
+      "name": "Gusto",
+      "website": "https://gusto.com",
+      "category": "hr"
+    },
+    {
+      "name": "Rippling",
+      "website": "https://rippling.com",
+      "category": "hr"
+    },
+    {
+      "name": "Okta",
+      "website": "https://okta.com",
+      "category": "security"
+    },
+    {
+      "name": "Auth0",
+      "website": "https://auth0.com",
+      "category": "security"
+    },
+    {
+      "name": "CrowdStrike",
+      "website": "https://crowdstrike.com",
+      "category": "security"
+    },
+    {
+      "name": "1Password",
+      "website": "https://1password.com",
+      "category": "security"
+    },
+    {
+      "name": "LastPass",
+      "website": "https://lastpass.com",
+      "category": "security"
+    },
+    {
+      "name": "Vercel",
+      "website": "https://vercel.com",
+      "category": "cloud_infrastructure"
+    },
+    {
+      "name": "Netlify",
+      "website": "https://netlify.com",
+      "category": "cloud_infrastructure"
+    },
+    {
+      "name": "Heroku",
+      "website": "https://heroku.com",
+      "category": "cloud_infrastructure"
+    },
+    {
+      "name": "DigitalOcean",
+      "website": "https://digitalocean.com",
+      "category": "cloud_infrastructure"
+    },
+    {
+      "name": "Linode",
+      "website": "https://linode.com",
+      "category": "cloud_infrastructure"
+    },
+    {
+      "name": "OpenAI",
+      "website": "https://openai.com",
+      "category": "ai_ml"
+    },
+    {
+      "name": "Anthropic",
+      "website": "https://anthropic.com",
+      "category": "ai_ml"
+    },
+    {
+      "name": "Hugging Face",
+      "website": "https://huggingface.co",
+      "category": "ai_ml"
+    },
+    {
+      "name": "Weights & Biases",
+      "website": "https://wandb.ai",
+      "category": "ai_ml"
+    },
+    {
+      "name": "MLflow",
+      "website": "https://mlflow.org",
+      "category": "ai_ml"
+    },
+    {
+      "name": "Buffer",
+      "website": "https://buffer.com",
+      "category": "marketing"
+    },
+    {
+      "name": "Hootsuite",
+      "website": "https://hootsuite.com",
+      "category": "marketing"
+    },
+    {
+      "name": "Sprout Social",
+      "website": "https://sproutsocial.com",
+      "category": "marketing"
+    },
+    {
+      "name": "Google Analytics",
+      "website": "https://analytics.google.com",
+      "category": "analytics"
+    },
+    {
+      "name": "Mixpanel",
+      "website": "https://mixpanel.com",
+      "category": "analytics"
+    },
+    {
+      "name": "Amplitude",
+      "website": "https://amplitude.com",
+      "category": "analytics"
+    },
+    {
+      "name": "Segment",
+      "website": "https://segment.com",
+      "category": "analytics"
+    },
+    {
+      "name": "Klaviyo",
+      "website": "https://klaviyo.com",
+      "category": "marketing"
+    },
+    {
+      "name": "ActiveCampaign",
+      "website": "https://activecampaign.com",
+      "category": "marketing"
+    },
+    {
+      "name": "ConvertKit",
+      "website": "https://convertkit.com",
+      "category": "marketing"
+    },
+    {
+      "name": "Typeform",
+      "website": "https://typeform.com",
+      "category": "productivity"
+    },
+    {
+      "name": "SurveyMonkey",
+      "website": "https://surveymonkey.com",
+      "category": "productivity"
+    },
+    {
+      "name": "Calendly",
+      "website": "https://calendly.com",
+      "category": "productivity"
+    },
+    {
+      "name": "Cal.com",
+      "website": "https://cal.com",
+      "category": "productivity"
+    },
+    {
+      "name": "Loom",
+      "website": "https://loom.com",
+      "category": "communication"
+    },
+    {
+      "name": "Descript",
+      "website": "https://descript.com",
+      "category": "media"
+    },
+    {
+      "name": "Pitch",
+      "website": "https://pitch.com",
+      "category": "productivity"
+    },
+    {
+      "name": "PandaDoc",
+      "website": "https://pandadoc.com",
+      "category": "productivity"
+    },
+    {
+      "name": "DocuSign",
+      "website": "https://docusign.com",
+      "category": "productivity"
+    },
+    {
+      "name": "Notion",
+      "website": "https://notion.so",
+      "category": "productivity"
+    }
+  ],
+  "metadata": {
+    "created_at": "2024-01-01T00:00:00Z",
+    "version": "1.0.0",
+    "notes": "Initial list of 100 SaaS applications for research"
+  }
+}

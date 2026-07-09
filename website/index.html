@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Composio AI Research Agent - Dashboard</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>Composio AI Research Agent</h1>
+            <p class="subtitle">SaaS Application Analysis Dashboard</p>
+        </div>
+    </header>
+
+    <main class="container">
+        <!-- Overview Section -->
+        <section class="overview">
+            <h2>Overview</h2>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value" id="total-apps">0</div>
+                    <div class="stat-label">Total Apps</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="verified-apps">0</div>
+                    <div class="stat-label">Verified</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="avg-confidence">0%</div>
+                    <div class="stat-label">Avg Confidence</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="mcp-support">0%</div>
+                    <div class="stat-label">MCP Support</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Charts Section -->
+        <section class="charts">
+            <h2>Analytics</h2>
+            <div class="charts-grid">
+                <div class="chart-container">
+                    <h3>Category Distribution</h3>
+                    <canvas id="category-chart"></canvas>
+                </div>
+                <div class="chart-container">
+                    <h3>Authentication Methods</h3>
+                    <canvas id="auth-chart"></canvas>
+                </div>
+                <div class="chart-container">
+                    <h3>Buildability Assessment</h3>
+                    <canvas id="buildability-chart"></canvas>
+                </div>
+                <div class="chart-container">
+                    <h3>Confidence Score Distribution</h3>
+                    <canvas id="confidence-chart"></canvas>
+                </div>
+            </div>
+        </section>
+
+        <!-- Applications Table -->
+        <section class="apps-section">
+            <h2>Applications</h2>
+            <div class="controls">
+                <input type="text" id="search-input" placeholder="Search applications...">
+                <select id="category-filter">
+                    <option value="">All Categories</option>
+                </select>
+                <select id="buildability-filter">
+                    <option value="">All Buildability</option>
+                    <option value="high">High</option>
+                    <option value="medium">Medium</option>
+                    <option value="low">Low</option>
+                </select>
+            </div>
+            <div class="table-container">
+                <table id="apps-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Category</th>
+                            <th>Description</th>
+                            <th>Auth Methods</th>
+                            <th>Self-Serve</th>
+                            <th>MCP Support</th>
+                            <th>Buildability</th>
+                            <th>Confidence</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="apps-tbody">
+                        <!-- Data will be populated by JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Details Modal -->
+        <div id="details-modal" class="modal">
+            <div class="modal-content">
+                <span class="close">&times;</span>
+                <div id="modal-body">
+                    <!-- Modal content will be populated by JavaScript -->
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>Composio AI Research Agent - Built for AI Product Ops Intern Take-Home Assignment</p>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>
