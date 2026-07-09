@@ -2,6 +2,12 @@
 
 A modular, production-ready AI-powered research system for analyzing SaaS applications and determining their buildability for AI agent integration. Built for the Composio AI Product Ops Internship assignment.
 
+
+## Live Demo
+
+- **Dashboard:** https://ubiquitous-blini-7e8a8f.netlify.app/
+- **Repository:** https://github.com/MeghanaKotambari/composio-ai-research-agent
+
 ## Problem
 
 Product Operations teams must evaluate 100+ SaaS applications for AI agent integration. Manual research is slow, inconsistent, and does not scale. This agent automates the entire research pipeline:
