@@ -1,55 +1,153 @@
 """
 Prompt Builder module for the AI Research Agent.
 
-Generates structured prompts for LLM to extract SaaS application information.
-Prompts are designed to return JSON ONLY for easy parsing.
-
-Responsibilities:
-- Build research prompts
-- Structure LLM requests
-- Ensure JSON-only responses
+Generates optimized prompts for extracting structured information from SaaS documentation.
+Designed to maximize factual accuracy and minimize hallucinations.
 """
 
 from typing import Dict, List, Optional, Any
-from pathlib import Path
 
 from .logger import get_logger
-from .models import Category, AuthMethod
 
 logger = get_logger(__name__)
 
 
 class PromptBuilder:
     """
-    Builds structured prompts for SaaS application research.
+    Builds optimized prompts for SaaS application research.
     
-    Generates prompts that instruct the LLM to return JSON ONLY
-    with specific fields for structured data extraction.
+    Generates prompts that maximize factual accuracy and minimize hallucinations
+    by explicitly instructing the model to use only provided documentation.
     """
-
-    def __init__(self):
+    
+    # Maximum documentation length to include in prompt
+    MAX_DOC_LENGTH = 3000
+    
+    def __init__(self) -> None:
         """Initialize prompt builder."""
-        self.system_prompt = self._get_system_prompt()
-
-    def _get_system_prompt(self) -> str:
+        pass
+    
+    def build_system_prompt(self) -> str:
         """
-        Get system prompt for the LLM.
+        Build the system prompt for the LLM.
+        
+        Instructs the AI to behave as an expert SaaS API Research Analyst
+        with strict rules to prevent hallucinations.
         
         Returns:
             System prompt string
         """
-        return """You are an expert SaaS application researcher. Your task is to analyze 
-applications and extract structured information in JSON format ONLY.
+        return """You are an expert SaaS API Research Analyst. Your task is to extract 
+structured information from official documentation about SaaS applications.
 
 CRITICAL RULES:
-1. Return ONLY valid JSON, no additional text or explanations
-2. Follow the exact schema provided
-3. Be accurate and conservative in your assessments
-4. If information is unclear, mark confidence_score lower
-5. Base your analysis on official documentation, API references, and public information
+1. Use ONLY the provided documentation. Do not use any external knowledge.
+2. Never invent or guess information. If a field cannot be determined, return "Unknown".
+3. If information is not explicitly present in the documentation, return "Unknown".
+4. Do NOT infer missing values or make assumptions.
+5. Prefer official documentation over assumptions.
+6. Output VALID JSON only.
+7. No markdown formatting.
+8. No comments.
+9. No explanations.
+10. No extra text before or after the JSON.
 
-Your response must be valid JSON that can be parsed directly."""
+JSON FORMAT RULES:
+- Arrays must always be arrays, even if empty: []
+- Strings must always be strings, use "Unknown" for missing: "Unknown"
+- Booleans must be true or false, never null: true
+- Return only the JSON object, nothing else."""
+    
+    def build_user_prompt(
+        self,
+        app_name: str,
+        documentation_text: str,
+    ) -> str:
+        """
+        Build the user prompt for extracting SaaS information.
+        
+        Args:
+            app_name: Name of the application to research
+            documentation_text: Extracted documentation text
+            
+        Returns:
+            User prompt string
+        """
+        # Truncate documentation to fit within token limits
+        doc_truncated = self._truncate_documentation(documentation_text)
+        
+        return f"""Extract structured information about the SaaS application "{app_name}" 
+from the following documentation.
 
+Documentation:
+{doc_truncated}
+
+Extract ONLY the following fields in JSON format:
+{{
+    "name": "Application name (use '{app_name}' if not found)",
+    "category": "one of: productivity, communication, crm, ecommerce, developer_tools, analytics, marketing, hr, finance, project_management, cloud_infrastructure, database, ai_ml, security, payment, social, media, education, healthcare, other",
+    "description": "one-line description (10-500 characters)",
+    "auth_methods": ["list of: api_key, oauth2, basic_auth, jwt, bearer_token, oauth1, none, unknown"],
+    "self_serve": true or false,
+    "api_surface": "description of API capabilities and endpoints (max 500 chars)",
+    "mcp_support": true or false or null,
+    "buildability": "high, medium, or low",
+    "main_blocker": "main blocker for AI agent integration or null",
+    "evidence_url": "URL providing evidence or null",
+    "notes": "additional research notes or null"
+}}
+
+Return ONLY the JSON object, no other text."""
+    
+    def build_messages(
+        self,
+        app_name: str,
+        documentation_text: str,
+    ) -> List[Dict[str, str]]:
+        """
+        Build complete messages for LLM API call.
+        
+        Args:
+            app_name: Name of the application
+            documentation_text: Documentation text
+            
+        Returns:
+            List of message dictionaries with system and user prompts
+        """
+        system_prompt = self.build_system_prompt()
+        user_prompt = self.build_user_prompt(app_name, documentation_text)
+        
+        return [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_prompt},
+        ]
+    
+    def _truncate_documentation(self, text: str) -> str:
+        """
+        Truncate documentation to fit within token limits.
+        
+        Preserves the beginning and important headings.
+        
+        Args:
+            text: Full documentation text
+            
+        Returns:
+            Truncated text
+        """
+        if len(text) <= self.MAX_DOC_LENGTH:
+            return text
+        
+        # Keep the first part (usually contains most important info)
+        truncated = text[:self.MAX_DOC_LENGTH]
+        
+        # Try to end at a sentence boundary
+        last_period = truncated.rfind(".")
+        if last_period > self.MAX_DOC_LENGTH * 0.8:
+            truncated = truncated[:last_period + 1]
+        
+        logger.debug(f"Documentation truncated from {len(text)} to {len(truncated)} chars")
+        return truncated
+    
     def build_research_prompt(
         self,
         app_name: str,
@@ -67,19 +165,20 @@ Your response must be valid JSON that can be parsed directly."""
         Returns:
             Formatted prompt string
         """
-        # Truncate content to fit within token limits (keep first 3000 chars)
-        content_truncated = content[:3000] if len(content) > 3000 else content
+        # Truncate content to fit within token limits
+        content_truncated = self._truncate_documentation(content)
         
-        prompt = f"""Analyze the following SaaS application and extract structured information.
+        return f"""Analyze the following SaaS application and extract structured information.
 
 Application: {app_name}
 Website: {website_url}
 
-Web Content:
+Documentation:
 {content_truncated}
 
-Provide the following information in JSON format ONLY:
+Extract ONLY the following fields in JSON format:
 {{
+    "name": "Application name",
     "category": "one of: productivity, communication, crm, ecommerce, developer_tools, analytics, marketing, hr, finance, project_management, cloud_infrastructure, database, ai_ml, security, payment, social, media, education, healthcare, other",
     "description": "one-line description (10-500 characters)",
     "auth_methods": ["list of: api_key, oauth2, basic_auth, jwt, bearer_token, oauth1, none, unknown"],
@@ -88,13 +187,12 @@ Provide the following information in JSON format ONLY:
     "mcp_support": true or false or null,
     "buildability": "high, medium, or low",
     "main_blocker": "main blocker for AI agent integration or null",
-    "evidence_url": "URL providing evidence or null"
+    "evidence_url": "URL providing evidence or null",
+    "notes": "additional research notes or null"
 }}
 
 Return ONLY the JSON object, no other text."""
-
-        return prompt
-
+    
     def build_refinement_prompt(
         self,
         app_name: str,
@@ -112,18 +210,20 @@ Return ONLY the JSON object, no other text."""
         Returns:
             Formatted prompt string
         """
-        prompt = f"""Refine and improve the following research data for {app_name} using additional information.
+        additional_truncated = self._truncate_documentation(additional_content)
+        
+        return f"""Refine and improve the following research data for {app_name} 
+using additional documentation.
 
 Previous Data:
 {previous_result}
 
-Additional Information:
-{additional_content[:2000]}
+Additional Documentation:
+{additional_truncated}
 
-Review and update the JSON with any corrections or improvements. Return ONLY the updated JSON object."""
-
-        return prompt
-
+Review and update the JSON with corrections. If information is still not 
+found in the documentation, keep "Unknown". Return ONLY the updated JSON object."""
+    
     def build_verification_prompt(
         self,
         app_name: str,
@@ -141,33 +241,18 @@ Review and update the JSON with any corrections or improvements. Return ONLY the
         Returns:
             Formatted prompt string
         """
-        prompt = f"""Verify the following research data for accuracy.
+        return f"""Verify the following research data for {app_name} against the evidence.
 
-Application: {app_name}
 Evidence URL: {evidence_url}
 
 Research Data:
 {research_data}
 
-Check for:
-1. Accuracy of category assignment
-2. Validity of authentication methods
-3. Correctness of API surface description
-4. Appropriateness of buildability rating
-5. Confidence score justification
+Check for accuracy. If any field is incorrect, fix it. If information 
+is not in the evidence, return "Unknown".
 
-Provide verification result in JSON format ONLY:
-{{
-    "status": "verified, needs_review, or failed",
-    "issues": ["list of issues found or empty"],
-    "suggestions": ["list of improvements or empty"],
-    "confidence": 0.0-1.0
-}}
-
-Return ONLY the JSON object."""
-
-        return prompt
-
+Return ONLY the corrected JSON object."""
+    
     def get_messages(
         self,
         user_prompt: str,
@@ -193,7 +278,7 @@ Return ONLY the JSON object."""
         else:
             messages.append({
                 "role": "system",
-                "content": self.system_prompt
+                "content": self.build_system_prompt()
             })
         
         messages.append({
@@ -202,7 +287,7 @@ Return ONLY the JSON object."""
         })
         
         return messages
-
+    
     def build_llm_request(
         self,
         app_name: str,
@@ -225,9 +310,8 @@ Return ONLY the JSON object."""
         
         return {
             "messages": messages,
-            "temperature": 0.3,  # Low temperature for consistent JSON
+            "temperature": 0.3,
             "max_tokens": 1000,
-            "response_format": "json",
         }
 
 
@@ -237,12 +321,17 @@ class PromptManager:
     
     Provides centralized access to all prompt-related functionality.
     """
-
-    def __init__(self):
+    
+    def __init__(self) -> None:
         """Initialize prompt manager."""
         self.builder = PromptBuilder()
-
-    def get_research_prompt(self, app_name: str, website_url: str, content: str) -> str:
+    
+    def get_research_prompt(
+        self,
+        app_name: str,
+        website_url: str,
+        content: str,
+    ) -> str:
         """
         Get research prompt for an application.
         
@@ -255,7 +344,7 @@ class PromptManager:
             Formatted prompt string
         """
         return self.builder.build_research_prompt(app_name, website_url, content)
-
+    
     def get_verification_prompt(
         self,
         app_name: str,
@@ -276,7 +365,7 @@ class PromptManager:
         return self.builder.build_verification_prompt(
             app_name, research_data, evidence_url
         )
-
+    
     def get_llm_request(
         self,
         app_name: str,
