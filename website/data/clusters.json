@@ -1,0 +1,27 @@
+{
+  "blocker_distribution": {
+    "Rate Limits": 5,
+    "Partner Approval": 21,
+    "Private Beta": 4,
+    "Manual Setup": 1
+  },
+  "top_blockers": [
+    [
+      "Partner Approval",
+      21
+    ],
+    [
+      "Rate Limits",
+      5
+    ],
+    [
+      "Private Beta",
+      4
+    ],
+    [
+      "Manual Setup",
+      1
+    ]
+  ],
+  "total_blocked": 31
+}

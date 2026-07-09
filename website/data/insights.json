@@ -1,0 +1,57 @@
+[
+  {
+    "insight": "Oauth2 is the most widely supported auth method",
+    "evidence": "86/102 apps support it (84%)",
+    "category": "authentication"
+  },
+  {
+    "insight": "84% of apps support multiple authentication methods",
+    "evidence": "Multi-auth support indicates mature API security posture, reducing integration friction",
+    "category": "authentication"
+  },
+  {
+    "insight": "Security apps offer the most auth method variety",
+    "evidence": "4 distinct auth types found in security category",
+    "category": "authentication"
+  },
+  {
+    "insight": "97% of apps offer self-serve access, 3% require sales",
+    "evidence": "99 apps have self-serve, 3 are gated, 0 unknown",
+    "category": "accessibility"
+  },
+  {
+    "insight": "1% of apps rated as easy (high buildability) for AI agent integration",
+    "evidence": "1 easy, 75 medium, 4 hard, 31 blocked",
+    "category": "buildability"
+  },
+  {
+    "insight": "'Partner Approval' is the most common integration blocker (21% of apps)",
+    "evidence": "21 apps affected. Top blockers: Partner Approval, Rate Limits, Private Beta",
+    "category": "buildability"
+  },
+  {
+    "insight": "REST APIs dominate (48 apps) compared to GraphQL (1 apps)",
+    "evidence": "47% REST, 1% GraphQL. SDK support in 22 apps",
+    "category": "api"
+  },
+  {
+    "insight": "MCP is becoming a standard for AI agent integration",
+    "evidence": "84% of apps support MCP, indicating strong ecosystem readiness",
+    "category": "mcp"
+  },
+  {
+    "insight": "'Productivity' apps have the most integration blockers",
+    "evidence": "5 apps blocked in this category, suggesting higher integration effort",
+    "category": "buildability"
+  },
+  {
+    "insight": "100% of apps have documented API surfaces",
+    "evidence": "102 of 102 apps provide API documentation, key enabler for AI agent integration",
+    "category": "api"
+  },
+  {
+    "insight": "Productivity apps have the fewest integration blockers (64% unblocked)",
+    "evidence": "9/14 productivity apps have no blockers, making them ideal for rapid AI agent integration",
+    "category": "buildability"
+  }
+]

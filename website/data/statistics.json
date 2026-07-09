@@ -1,0 +1,234 @@
+{
+  "authentication": {
+    "total_apps_with_auth": 306,
+    "auth_method_distribution": {
+      "api_key": 48,
+      "oauth2": 86,
+      "bearer_token": 86,
+      "jwt": 86
+    },
+    "most_common_methods": [
+      "oauth2",
+      "bearer_token",
+      "jwt",
+      "api_key"
+    ],
+    "auth_by_category": {
+      "security": {
+        "api_key": 2,
+        "oauth2": 4,
+        "bearer_token": 4,
+        "jwt": 4
+      },
+      "marketing": {
+        "oauth2": 10,
+        "bearer_token": 10,
+        "jwt": 10,
+        "api_key": 4
+      },
+      "media": {
+        "oauth2": 2,
+        "bearer_token": 2,
+        "jwt": 2,
+        "api_key": 2
+      },
+      "productivity": {
+        "oauth2": 11,
+        "bearer_token": 11,
+        "api_key": 8,
+        "jwt": 11
+      },
+      "analytics": {
+        "oauth2": 5,
+        "api_key": 5,
+        "bearer_token": 5,
+        "jwt": 5
+      },
+      "ai_ml": {
+        "oauth2": 5,
+        "api_key": 4,
+        "bearer_token": 5,
+        "jwt": 5
+      },
+      "project_management": {
+        "oauth2": 6,
+        "bearer_token": 6,
+        "jwt": 6,
+        "api_key": 2
+      },
+      "cloud_infrastructure": {
+        "oauth2": 8,
+        "bearer_token": 8,
+        "jwt": 8,
+        "api_key": 3
+      },
+      "ecommerce": {
+        "oauth2": 4,
+        "bearer_token": 4,
+        "jwt": 4,
+        "api_key": 1
+      },
+      "developer_tools": {
+        "oauth2": 10,
+        "bearer_token": 10,
+        "jwt": 10,
+        "api_key": 3
+      },
+      "database": {
+        "oauth2": 4,
+        "bearer_token": 4,
+        "jwt": 4,
+        "api_key": 2
+      },
+      "finance": {
+        "api_key": 2,
+        "oauth2": 2,
+        "bearer_token": 2,
+        "jwt": 2
+      },
+      "communication": {
+        "oauth2": 7,
+        "bearer_token": 7,
+        "jwt": 7,
+        "api_key": 4
+      },
+      "hr": {
+        "api_key": 2,
+        "oauth2": 1,
+        "bearer_token": 1,
+        "jwt": 1
+      },
+      "crm": {
+        "oauth2": 3,
+        "bearer_token": 3,
+        "jwt": 3,
+        "api_key": 2
+      },
+      "payment": {
+        "oauth2": 4,
+        "api_key": 2,
+        "bearer_token": 4,
+        "jwt": 4
+      }
+    },
+    "multi_auth_percentage": 84.3
+  },
+  "categories": {
+    "total_categories": 16,
+    "category_distribution": {
+      "security": 5,
+      "marketing": 10,
+      "media": 3,
+      "productivity": 14,
+      "analytics": 7,
+      "ai_ml": 5,
+      "project_management": 7,
+      "cloud_infrastructure": 8,
+      "ecommerce": 4,
+      "developer_tools": 11,
+      "database": 5,
+      "finance": 3,
+      "communication": 9,
+      "hr": 3,
+      "crm": 4,
+      "payment": 4
+    },
+    "most_common_category": "productivity",
+    "category_percentages": {
+      "security": 4.9,
+      "marketing": 9.8,
+      "media": 2.9,
+      "productivity": 13.7,
+      "analytics": 6.9,
+      "ai_ml": 4.9,
+      "project_management": 6.9,
+      "cloud_infrastructure": 7.8,
+      "ecommerce": 3.9,
+      "developer_tools": 10.8,
+      "database": 4.9,
+      "finance": 2.9,
+      "communication": 8.8,
+      "hr": 2.9,
+      "crm": 3.9,
+      "payment": 3.9
+    }
+  },
+  "api": {
+    "apps_with_api": 102,
+    "api_coverage_percentage": 100.0,
+    "api_type_distribution": {
+      "rest": 48,
+      "graphql": 1,
+      "sdk": 22,
+      "webhook": 6,
+      "openapi": 0,
+      "mixed": 25
+    }
+  },
+  "accessibility": {
+    "self_serve": 99,
+    "enterprise_only": 3,
+    "unknown": 0,
+    "self_serve_percentage": 97.1
+  },
+  "mcp": {
+    "available": 86,
+    "not_available": 16,
+    "unknown": 0,
+    "mcp_support_rate": 84.3
+  },
+  "buildability": {
+    "easy": 1,
+    "medium": 75,
+    "hard": 4,
+    "blocked": 31,
+    "buildability_distribution": {
+      "medium": 75,
+      "blocked": 22,
+      "low": 4,
+      "high": 1
+    }
+  },
+  "blockers": {
+    "blocker_distribution": {
+      "Rate Limits": 5,
+      "Partner Approval": 21,
+      "Private Beta": 4,
+      "Manual Setup": 1
+    },
+    "top_blockers": [
+      [
+        "Partner Approval",
+        21
+      ],
+      [
+        "Rate Limits",
+        5
+      ],
+      [
+        "Private Beta",
+        4
+      ],
+      [
+        "Manual Setup",
+        1
+      ]
+    ],
+    "total_blocked": 31
+  },
+  "verification": {
+    "verified": 52,
+    "manual_review": 50,
+    "pending": 0,
+    "verification_rate": 51.0,
+    "total_verified_fields": 0,
+    "failed_fields": 0,
+    "warnings": 0
+  },
+  "confidence": {
+    "average_confidence": 0.54,
+    "high_confidence": 0,
+    "medium_confidence": 89,
+    "low_confidence": 13
+  }
+}

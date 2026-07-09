@@ -99,6 +99,8 @@ temp/
 
 # Data Files (except apps.json)
 data/
+!website/data/
+!website/data/*.json
 *.csv
 !requirements.txt
 

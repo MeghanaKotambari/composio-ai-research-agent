@@ -1,0 +1,432 @@
+[
+  {
+    "name": "1Password",
+    "confidence_score": 0.48,
+    "verification_status": "manual_review",
+    "reason": "Low confidence score",
+    "missing_fields": [
+      "main_blocker"
+    ]
+  },
+  {
+    "name": "Adobe Creative Cloud",
+    "confidence_score": 0.52,
+    "verification_status": "manual_review",
+    "reason": "Flagged by verification",
+    "missing_fields": [
+      "main_blocker"
+    ]
+  },
+  {
+    "name": "Asana",
+    "confidence_score": 0.58,
+    "verification_status": "manual_review",
+    "reason": "Flagged by verification",
+    "missing_fields": []
+  },
+  {
+    "name": "AWS",
+    "confidence_score": 0.52,
+    "verification_status": "manual_review",
+    "reason": "Flagged by verification",
+    "missing_fields": [
+      "main_blocker"
+    ]
+  },
+  {
+    "name": "Canva",
+    "confidence_score": 0.48,
+    "verification_status": "manual_review",
+    "reason": "Low confidence score",
+    "missing_fields": [
+      "main_blocker"
+    ]
+  },
+  {
+    "name": "Confluence",
+    "confidence_score": 0.52,
+    "verification_status": "manual_review",
+    "reason": "Flagged by verification",
+    "missing_fields": [
+      "main_blocker"
+    ]
+  },
+  {
+    "name": "Contentful",
+    "confidence_score": 0.56,
+    "verification_status": "manual_review",
+    "reason": "Flagged by verification",
+    "missing_fields": [
+      "main_blocker"
+    ]
+  },
+  {
+    "name": "DocuSign",
+    "confidence_score": 0.58,
+    "verification_status": "manual_review",
+    "reason": "Flagged by verification",
+    "missing_fields": []
+  },
+  {
+    "name": "Dropbox",
+    "confidence_score": 0.58,
+    "verification_status": "manual_review",
+    "reason": "Flagged by verification",
+    "missing_fields": []
+  },
+  {
+    "name": "Figma",
+    "confidence_score": 0.58,
+    "verification_status": "manual_review",
+    "reason": "Flagged by verification",
+    "missing_fields": []
+  },
+  {
+    "name": "FreshBooks",
+    "confidence_score": 0.48,
+    "verification_status": "manual_review",
+    "reason": "Low confidence score",
+    "missing_fields": [
+      "main_blocker"
+    ]
+  },
+  {
+    "name": "GitLab",
+    "confidence_score": 0.58,
+    "verification_status": "manual_review",
+    "reason": "Flagged by verification",
+    "missing_fields": []
+  },
+  {
+    "name": "Google Analytics",
+    "confidence_score": 0.48,
+    "verification_status": "manual_review",
+    "reason": "Low confidence score",
+    "missing_fields": [
+      "main_blocker",
+      "evidence_url"
+    ]
+  },
+  {
+    "name": "Google Cloud",
+    "confidence_score": 0.52,
+    "verification_status": "manual_review",
+    "reason": "Flagged by verification",
+    "missing_fields": [
+      "main_blocker"
+    ]
+  },
+  {
+    "name": "Google Workspace",
+    "confidence_score": 0.48,
+    "verification_status": "manual_review",
+    "reason": "Low confidence score",
+    "missing_fields": [
+      "main_blocker"
+    ]
+  },
+  {
+    "name": "Gusto",
+    "confidence_score": 0.48,
+    "verification_status": "manual_review",
+    "reason": "Low confidence score",
+    "missing_fields": [
+      "main_blocker"
+    ]
+  },
+  {
+    "name": "Heroku",
+    "confidence_score": 0.68,
+    "verification_status": "manual_review",
+    "reason": "Flagged by verification",
+    "missing_fields": []
+  },
+  {
+    "name": "HubSpot",
+    "confidence_score": 0.58,
+    "verification_status": "manual_review",
+    "reason": "Flagged by verification",
+    "missing_fields": []
+  },
+  {
+    "name": "Intercom",
+    "confidence_score": 0.52,
+    "verification_status": "manual_review",
+    "reason": "Flagged by verification",
+    "missing_fields": [
+      "main_blocker"
+    ]
+  },
+  {
+    "name": "Jira",
+    "confidence_score": 0.52,
+    "verification_status": "manual_review",
+    "reason": "Flagged by verification",
+    "missing_fields": [
+      "main_blocker"
+    ]
+  },
+  {
+    "name": "Klaviyo",
+    "confidence_score": 0.52,
+    "verification_status": "manual_review",
+    "reason": "Flagged by verification",
+    "missing_fields": [
+      "main_blocker"
+    ]
+  },
+  {
+    "name": "LastPass",
+    "confidence_score": 0.52,
+    "verification_status": "manual_review",
+    "reason": "Flagged by verification",
+    "missing_fields": [
+      "main_blocker",
+      "evidence_url"
+    ]
+  },
+  {
+    "name": "Loom",
+    "confidence_score": 0.52,
+    "verification_status": "manual_review",
+    "reason": "Flagged by verification",
+    "missing_fields": [
+      "main_blocker"
+    ]
+  },
+  {
+    "name": "Mailgun",
+    "confidence_score": 0.52,
+    "verification_status": "manual_review",
+    "reason": "Flagged by verification",
+    "missing_fields": [
+      "main_blocker"
+    ]
+  },
+  {
+    "name": "Microsoft Teams",
+    "confidence_score": 0.48,
+    "verification_status": "manual_review",
+    "reason": "Low confidence score",
+    "missing_fields": [
+      "main_blocker",
+      "evidence_url"
+    ]
+  },
+  {
+    "name": "Miro",
+    "confidence_score": 0.48,
+    "verification_status": "manual_review",
+    "reason": "Low confidence score",
+    "missing_fields": [
+      "main_blocker"
+    ]
+  },
+  {
+    "name": "Mixpanel",
+    "confidence_score": 0.48,
+    "verification_status": "manual_review",
+    "reason": "Low confidence score",
+    "missing_fields": [
+      "main_blocker"
+    ]
+  },
+  {
+    "name": "Netlify",
+    "confidence_score": 0.52,
+    "verification_status": "manual_review",
+    "reason": "Flagged by verification",
+    "missing_fields": [
+      "main_blocker"
+    ]
+  },
+  {
+    "name": "New Relic",
+    "confidence_score": 0.52,
+    "verification_status": "manual_review",
+    "reason": "Flagged by verification",
+    "missing_fields": [
+      "main_blocker"
+    ]
+  },
+  {
+    "name": "PagerDuty",
+    "confidence_score": 0.52,
+    "verification_status": "manual_review",
+    "reason": "Flagged by verification",
+    "missing_fields": [
+      "main_blocker"
+    ]
+  },
+  {
+    "name": "Pipedrive",
+    "confidence_score": 0.52,
+    "verification_status": "manual_review",
+    "reason": "Flagged by verification",
+    "missing_fields": [
+      "main_blocker"
+    ]
+  },
+  {
+    "name": "PostgreSQL",
+    "confidence_score": 0.64,
+    "verification_status": "manual_review",
+    "reason": "Flagged by verification",
+    "missing_fields": []
+  },
+  {
+    "name": "Razorpay",
+    "confidence_score": 0.58,
+    "verification_status": "manual_review",
+    "reason": "Flagged by verification",
+    "missing_fields": []
+  },
+  {
+    "name": "Redis",
+    "confidence_score": 0.52,
+    "verification_status": "manual_review",
+    "reason": "Flagged by verification",
+    "missing_fields": [
+      "main_blocker"
+    ]
+  },
+  {
+    "name": "Rippling",
+    "confidence_score": 0.54,
+    "verification_status": "manual_review",
+    "reason": "Flagged by verification",
+    "missing_fields": []
+  },
+  {
+    "name": "Salesforce",
+    "confidence_score": 0.58,
+    "verification_status": "manual_review",
+    "reason": "Flagged by verification",
+    "missing_fields": [
+      "evidence_url"
+    ]
+  },
+  {
+    "name": "Segment",
+    "confidence_score": 0.58,
+    "verification_status": "manual_review",
+    "reason": "Flagged by verification",
+    "missing_fields": []
+  },
+  {
+    "name": "Shopify",
+    "confidence_score": 0.52,
+    "verification_status": "manual_review",
+    "reason": "Flagged by verification",
+    "missing_fields": [
+      "main_blocker"
+    ]
+  },
+  {
+    "name": "Sprout Social",
+    "confidence_score": 0.58,
+    "verification_status": "manual_review",
+    "reason": "Flagged by verification",
+    "missing_fields": [
+      "evidence_url"
+    ]
+  },
+  {
+    "name": "Squarespace",
+    "confidence_score": 0.52,
+    "verification_status": "manual_review",
+    "reason": "Flagged by verification",
+    "missing_fields": [
+      "main_blocker"
+    ]
+  },
+  {
+    "name": "Strapi",
+    "confidence_score": 0.52,
+    "verification_status": "manual_review",
+    "reason": "Flagged by verification",
+    "missing_fields": [
+      "main_blocker"
+    ]
+  },
+  {
+    "name": "SurveyMonkey",
+    "confidence_score": 0.48,
+    "verification_status": "manual_review",
+    "reason": "Low confidence score",
+    "missing_fields": [
+      "main_blocker",
+      "evidence_url"
+    ]
+  },
+  {
+    "name": "Trello",
+    "confidence_score": 0.48,
+    "verification_status": "manual_review",
+    "reason": "Low confidence score",
+    "missing_fields": [
+      "main_blocker"
+    ]
+  },
+  {
+    "name": "Typeform",
+    "confidence_score": 0.52,
+    "verification_status": "manual_review",
+    "reason": "Flagged by verification",
+    "missing_fields": [
+      "main_blocker"
+    ]
+  },
+  {
+    "name": "Weights & Biases",
+    "confidence_score": 0.52,
+    "verification_status": "manual_review",
+    "reason": "Flagged by verification",
+    "missing_fields": [
+      "main_blocker"
+    ]
+  },
+  {
+    "name": "Wix",
+    "confidence_score": 0.54,
+    "verification_status": "manual_review",
+    "reason": "Flagged by verification",
+    "missing_fields": []
+  },
+  {
+    "name": "WordPress",
+    "confidence_score": 0.52,
+    "verification_status": "manual_review",
+    "reason": "Flagged by verification",
+    "missing_fields": [
+      "main_blocker"
+    ]
+  },
+  {
+    "name": "Workday",
+    "confidence_score": 0.52,
+    "verification_status": "manual_review",
+    "reason": "Flagged by verification",
+    "missing_fields": [
+      "main_blocker"
+    ]
+  },
+  {
+    "name": "Zoho CRM",
+    "confidence_score": 0.48,
+    "verification_status": "manual_review",
+    "reason": "Low confidence score",
+    "missing_fields": [
+      "main_blocker"
+    ]
+  },
+  {
+    "name": "Zoom",
+    "confidence_score": 0.48,
+    "verification_status": "manual_review",
+    "reason": "Low confidence score",
+    "missing_fields": [
+      "main_blocker"
+    ]
+  }
+]
