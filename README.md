@@ -2,7 +2,6 @@
 
 A modular, production-ready AI-powered research system for analyzing SaaS applications and determining their buildability for AI agent integration. Built for the Composio AI Product Ops Internship assignment.
 
-
 ## Live Demo
 
 - **Dashboard:** https://ubiquitous-blini-7e8a8f.netlify.app/
