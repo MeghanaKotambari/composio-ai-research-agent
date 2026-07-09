@@ -1,16 +1,16 @@
 # Composio AI Research Agent
 
-A modular, production-ready AI-powered research system for analyzing SaaS applications and determining their buildability for AI agents. Built for the Composio AI Product Ops Internship assignment.
+A modular, production-ready AI-powered research system for analyzing SaaS applications and determining their buildability for AI agent integration. Built for the Composio AI Product Ops Internship assignment.
 
 ## Problem
 
-Product Operations teams need to evaluate 100+ SaaS applications for AI agent integration. Manual research is slow, inconsistent, and doesn't scale. This agent automates the entire pipeline:
+Product Operations teams must evaluate 100+ SaaS applications for AI agent integration. Manual research is slow, inconsistent, and does not scale. This agent automates the entire research pipeline:
 
-1. **Documentation Discovery** — Finds official developer docs (not homepages)
-2. **Web Research** — Fetches and extracts clean text from documentation
+1. **Documentation Discovery** — Locates official developer documentation (not marketing homepages)
+2. **Web Research** — Fetches and extracts clean text from documentation pages
 3. **LLM Extraction** — Uses AI to extract structured data (auth methods, API surface, buildability)
-4. **Deterministic Verification** — Cross-references extracted data against documentation
-5. **Analytics** — Generates insights, clusters, and opportunity matrices
+4. **Deterministic Verification** — Cross-references extracted data against documentation using keyword matching
+5. **Analytics** — Generates insights, clusters, and opportunity matrices from the data
 6. **Dashboard** — Interactive HTML dashboard with charts and filters
 
 ## Architecture
@@ -36,13 +36,13 @@ Product Operations teams need to evaluate 100+ SaaS applications for AI agent in
 │ Doc  │ │  Web   │ │Prompt│ │  LLM   │ │ Parser │ │Verifier│
 │Discov│ │Research│ │Builder│ │Provider│ │        │ │        │
 └──────┘ └────────┘ └──────┘ └────────┘ └────────┘ └────────┘
-                              │
-                              ▼
-                         ┌────────┐
-                         │  Cache │
-                         │output/ │
-                         │ cache/ │
-                         └────────┘
+                          │
+                          ▼
+                     ┌────────┐
+                     │  Cache │
+                     │output/ │
+                     │ cache/ │
+                     └────────┘
 ```
 
 ## Workflow
@@ -86,7 +86,7 @@ Dashboard (interactive HTML with Chart.js)
 
 ## Verification
 
-Verification is **deterministic** — no LLM calls are made during verification. Each field is cross-referenced against documentation using keyword matching:
+Verification is **deterministic** — no LLM calls are made during this phase. Each field is cross-referenced against documentation using keyword matching:
 
 | Field | Verification Method |
 |-------|-------------------|
@@ -102,17 +102,17 @@ Apps with low verification scores (< 40) are flagged for **manual review**.
 
 The analytics engine generates:
 
-- **results.json** — All app research data
-- **statistics.json** — Auth, category, API, accessibility, MCP, buildability stats
-- **insights.json** — Cross-category insights (e.g., "CRM platforms support OAuth")
+- **results.json** — All app research data with confidence scores and verification status
+- **statistics.json** — Auth, category, API, accessibility, MCP, and buildability statistics
+- **insights.json** — Cross-category insights derived from computed statistics
 - **clusters.json** — Blocker clustering (e.g., "No Public API", "Enterprise Only")
-- **manual_review.json** — Apps needing human validation
+- **manual_review.json** — Apps requiring human validation
 
 ## Dashboard
 
 The interactive HTML dashboard (`website/index.html`) provides:
 
-- Hero stats (total apps, verification rate, avg confidence)
+- Hero stats (total apps, verification rate, average confidence)
 - Executive insights
 - Dashboard metrics (OAuth, API Keys, Self-Serve, etc.)
 - Interactive charts (auth distribution, categories, API types, buildability)
@@ -140,15 +140,20 @@ cd composio-ai-research-agent
 # Install dependencies
 pip install -r requirements.txt
 
-# (Optional) Configure environment
-cp .env.example .env
+# (Optional) Configure environment for OpenRouter
+# Windows PowerShell:
+Copy-Item .env.example .env
+# Linux/macOS:
+# cp .env.example .env
 # Edit .env with your API keys if using OpenRouter
 ```
 
 ### Run Research
 
+The project runs fully with the MockProvider. OpenRouter is optional for real LLM calls.
+
 ```bash
-# Run with mock provider (no API key needed)
+# Run with mock provider (no API key required)
 python -m agent.main research --provider mock --limit 10
 
 # Run with OpenRouter (requires OPENROUTER_API_KEY in .env)
@@ -166,7 +171,12 @@ python -m agent.main status
 
 ### View Dashboard
 
-Open `website/index.html` in a browser after running research.
+```bash
+# Serve the website locally
+python -m http.server 8000 --directory website
+```
+
+Then open `http://localhost:8000` in your browser.
 
 ## How to Deploy
 
@@ -180,7 +190,7 @@ python -m http.server 8000 --directory website
 
 ### Production
 
-The agent can be deployed as a scheduled job (cron, GitHub Actions) to run research periodically. The dashboard is a static HTML file that can be served from any web server (Nginx, S3, GitHub Pages).
+The agent can be deployed as a scheduled job to run research periodically. The dashboard is a static HTML file that can be served from any web server (Nginx, S3, GitHub Pages).
 
 ## Folder Structure
 
@@ -255,6 +265,7 @@ project-root/
 ## Tech Stack
 
 ### Backend
+
 - **Python 3.12+** — Core language
 - **Pydantic** — Data validation and models
 - **Rich** — Beautiful console output
@@ -263,6 +274,7 @@ project-root/
 - **requests** — HTTP client
 
 ### Frontend
+
 - **HTML5** — Structure
 - **CSS3** — Dark theme with glassmorphism
 - **Vanilla JavaScript** — Dashboard logic
