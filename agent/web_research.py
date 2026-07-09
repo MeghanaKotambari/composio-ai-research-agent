@@ -24,6 +24,234 @@ from .utils import is_valid_url, normalize_url, retry as custom_retry
 logger = get_logger(__name__)
 
 
+class WebResearchService:
+    """
+    Web research service for fetching and extracting documentation content.
+    
+    Fetches official documentation pages and extracts clean readable text
+    for later LLM processing. Does not perform any LLM operations.
+    """
+    
+    # Default user agent for requests
+    DEFAULT_USER_AGENT = (
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+        "AppleWebKit/537.36 (KHTML, like Gecko) "
+        "Chrome/120.0.0.0 Safari/537.36"
+    )
+    
+    # Maximum text length to extract (approximately 12000 characters)
+    MAX_TEXT_LENGTH = 12000
+    
+    def __init__(
+        self,
+        timeout: int = 20,
+        max_retries: int = 3,
+        user_agent: Optional[str] = None,
+    ) -> None:
+        """
+        Initialize web research service.
+        
+        Args:
+            timeout: Request timeout in seconds (default: 20)
+            max_retries: Maximum number of retry attempts (default: 3)
+            user_agent: Custom user agent string (uses default if None)
+        """
+        self.timeout = timeout
+        self.max_retries = max_retries
+        self.user_agent = user_agent or self.DEFAULT_USER_AGENT
+        
+        # Session for connection pooling
+        self.session = requests.Session()
+        self.session.headers.update({"User-Agent": self.user_agent})
+        
+        logger.info("WebResearchService initialized")
+    
+    def fetch_page(self, url: str) -> str:
+        """
+        Download webpage using requests with retry logic.
+        
+        Args:
+            url: URL to fetch
+            
+        Returns:
+            HTML content as string
+            
+        Raises:
+            ValueError: If URL is invalid
+            requests.RequestException: If fetch fails after retries
+            requests.Timeout: If request times out
+        """
+        if not self._validate_url(url):
+            raise ValueError(f"Invalid URL: {url}")
+        
+        url = normalize_url(url)
+        logger.info(f"Fetching page: {url}")
+        
+        last_error = None
+        for attempt in range(1, self.max_retries + 1):
+            try:
+                response = self.session.get(url, timeout=self.timeout)
+                response.raise_for_status()
+                
+                # Detect and log redirects
+                if response.url != url:
+                    logger.info(f"Redirect detected: {url} -> {response.url}")
+                
+                logger.success(f"Successfully fetched {url} ({len(response.text)} bytes)")
+                return response.text
+                
+            except requests.Timeout as e:
+                last_error = e
+                logger.warning(f"Timeout on attempt {attempt}/{self.max_retries} for {url}")
+            except requests.RequestException as e:
+                last_error = e
+                logger.warning(f"Request failed on attempt {attempt}/{self.max_retries} for {url}: {e}")
+            
+            if attempt < self.max_retries:
+                continue
+        
+        raise requests.RequestException(f"Failed to fetch {url} after {self.max_retries} attempts: {last_error}")
+    
+    def _validate_url(self, url: str) -> bool:
+        """
+        Validate URL format.
+        
+        Args:
+            url: URL to validate
+            
+        Returns:
+            True if valid, False otherwise
+        """
+        return is_valid_url(url)
+    
+    def extract_text(self, html: str) -> str:
+        """
+        Extract readable text from HTML using BeautifulSoup.
+        
+        Removes non-content elements and normalizes whitespace.
+        Limits output to approximately the first 12000 characters.
+        
+        Args:
+            html: HTML content to extract from
+            
+        Returns:
+            Cleaned text content
+        """
+        logger.debug("Extracting text from HTML")
+        
+        soup = BeautifulSoup(html, "html.parser")
+        
+        # Remove unwanted elements that don't contain useful content
+        for element in soup(["script", "style", "svg", "noscript", "iframe", "footer", "nav", "header"]):
+            element.decompose()
+        
+        # Get text content
+        text = soup.get_text(separator="\n")
+        
+        # Clean and normalize whitespace
+        text = self._clean_text(text)
+        
+        # Limit to approximately 12000 characters to avoid huge prompts
+        if len(text) > self.MAX_TEXT_LENGTH:
+            text = text[:self.MAX_TEXT_LENGTH]
+            logger.debug(f"Text truncated to {self.MAX_TEXT_LENGTH} characters")
+        
+        logger.debug(f"Extracted {len(text)} characters of text")
+        return text
+    
+    def _clean_text(self, text: str) -> str:
+        """
+        Clean and normalize extracted text.
+        
+        Args:
+            text: Raw text to clean
+            
+        Returns:
+            Cleaned text with normalized whitespace
+        """
+        if not text:
+            return ""
+        
+        # Split into lines
+        lines = text.split("\n")
+        
+        # Remove empty lines and excessive whitespace
+        cleaned_lines = []
+        for line in lines:
+            line = " ".join(line.split())  # Normalize whitespace
+            if line:  # Skip empty lines
+                cleaned_lines.append(line)
+        
+        # Join with single newlines
+        cleaned_text = "\n".join(cleaned_lines)
+        
+        # Remove excessive newlines (more than 2 consecutive)
+        while "\n\n\n" in cleaned_text:
+            cleaned_text = cleaned_text.replace("\n\n\n", "\n\n")
+        
+        return cleaned_text.strip()
+    
+    def research_source(self, url: str) -> Dict[str, Any]:
+        """
+        Complete research workflow for a single source.
+        
+        Fetches page and extracts clean text.
+        
+        Args:
+            url: URL to research
+            
+        Returns:
+            Dictionary containing:
+            - url: Original URL
+            - title: Page title (if found)
+            - text: Extracted text content
+            - status: HTTP status code (200 for success)
+        """
+        logger.info(f"Researching source: {url}")
+        
+        result = {
+            "url": url,
+            "title": "",
+            "text": "",
+            "status": 0,
+        }
+        
+        try:
+            html = self.fetch_page(url)
+            
+            # Extract title from HTML
+            soup = BeautifulSoup(html, "html.parser")
+            title_tag = soup.find("title")
+            if title_tag:
+                result["title"] = title_tag.get_text(strip=True)
+            
+            # Extract text content
+            result["text"] = self.extract_text(html)
+            result["status"] = 200
+            
+            logger.success(f"Research complete for {url} ({len(result['text'])} chars)")
+            
+        except Exception as e:
+            logger.error(f"Failed to research {url}: {e}")
+            result["status"] = 0
+            result["text"] = f"Error: {str(e)}"
+        
+        return result
+    
+    def close(self) -> None:
+        """Close the session and free resources."""
+        self.session.close()
+        logger.debug("WebResearchService session closed")
+    
+    def __enter__(self) -> "WebResearchService":
+        """Context manager entry."""
+        return self
+    
+    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
+        """Context manager exit."""
+        self.close()
+
+
 class WebResearcher:
     """
     Web research module for fetching and extracting web content.

@@ -11,7 +11,7 @@ from .models import AppResearch, ResearchBatch
 from .config import Settings
 from .research_agent import ResearchAgent, ResearchService
 from .llm_client import LLMClient, LLMProvider, MockLLMProvider
-from .web_research import WebResearcher, DocumentationFinder
+from .web_research import WebResearcher, DocumentationFinder, WebResearchService
 from .prompt_builder import PromptBuilder, PromptManager
 from .parser import ResponseParser, DataEnricher
 from .confidence import ConfidenceEstimator
@@ -28,6 +28,7 @@ __all__ = [
     "MockLLMProvider",
     "WebResearcher",
     "DocumentationFinder",
+    "WebResearchService",
     "PromptBuilder",
     "PromptManager",
     "ResponseParser",
