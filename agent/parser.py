@@ -3,12 +3,6 @@ Parser module for the AI Research Agent.
 
 Validates and parses LLM responses into structured Pydantic models.
 Handles malformed responses and provides detailed error reporting.
-
-Responsibilities:
-- Parse LLM JSON responses
-- Validate against Pydantic models
-- Handle malformed responses
-- Extract structured data
 """
 
 import json
@@ -24,9 +18,32 @@ from .models import AppResearch, Category, AuthMethod, VerificationStatus
 logger = get_logger(__name__)
 
 
+# ============================================================================
+# Custom Exceptions
+# ============================================================================
+
+class ResponseParsingError(Exception):
+    """Base exception for response parsing errors."""
+    pass
+
+
+class MalformedJSONError(ResponseParsingError):
+    """Raised when JSON cannot be located or extracted from response."""
+    pass
+
+
+class ValidationFailedError(ResponseParsingError):
+    """Raised when JSON is valid but fails Pydantic validation."""
+    pass
+
+
+# ============================================================================
+# Parse Result
+# ============================================================================
+
 class ParseResult:
     """Represents the result of parsing an LLM response."""
-
+    
     def __init__(
         self,
         success: bool,
@@ -36,7 +53,7 @@ class ParseResult:
     ):
         """
         Initialize parse result.
-
+        
         Args:
             success: Whether parsing succeeded
             data: Parsed AppResearch object if successful
@@ -47,7 +64,7 @@ class ParseResult:
         self.data = data
         self.error = error
         self.raw_response = raw_response
-
+    
     def to_dict(self) -> Dict[str, Any]:
         """Convert result to dictionary."""
         return {
@@ -58,157 +75,257 @@ class ParseResult:
         }
 
 
+# ============================================================================
+# Response Parser
+# ============================================================================
+
 class ResponseParser:
     """
     Parses LLM responses into structured data.
     
     Handles JSON extraction, validation, and error recovery.
+    Extremely robust against malformed responses.
     """
-
-    def __init__(self):
+    
+    def __init__(self) -> None:
         """Initialize response parser."""
         self.max_retries = 3
-
-    def parse(self, llm_response: str, app_name: Optional[str] = None) -> ParseResult:
+    
+    def parse(self, response: str, app_name: Optional[str] = None) -> ParseResult:
         """
-        Parse LLM response into AppResearch object.
+        Main public method to parse LLM response.
+        
+        Pipeline:
+        1. Clean response
+        2. Extract JSON
+        3. Repair common errors
+        4. Parse JSON
+        5. Validate
         
         Args:
-            llm_response: Raw LLM response string
-            app_name: Optional app name to inject if missing from response
+            response: Raw LLM response string
+            app_name: Optional app name to inject if missing
             
         Returns:
             ParseResult object
         """
-        logger.debug("Parsing LLM response")
+        logger.debug("Starting response parsing pipeline")
         
-        # Step 1: Extract JSON from response
-        json_str = self._extract_json(llm_response)
-        if not json_str:
+        # Step 1: Clean response
+        cleaned = self.clean_response(response)
+        logger.debug("Response cleaned")
+        
+        # Step 2: Extract JSON
+        try:
+            json_str = self.extract_json(cleaned)
+        except MalformedJSONError as e:
+            logger.error(f"JSON extraction failed: {e}")
             return ParseResult(
                 success=False,
-                error="No valid JSON found in response",
-                raw_response=llm_response,
+                error=str(e),
+                raw_response=response,
             )
         
-        # Step 2: Parse JSON
+        # Step 3: Repair common errors
+        repaired = self.repair_common_errors(json_str)
+        if repaired != json_str:
+            logger.info("JSON repaired")
+        
+        # Step 4: Parse JSON
         try:
-            data = json.loads(json_str)
-        except json.JSONDecodeError as e:
+            data = self.parse_json(repaired)
+        except MalformedJSONError as e:
+            logger.error(f"JSON parsing failed: {e}")
             return ParseResult(
                 success=False,
-                error=f"Invalid JSON: {str(e)}",
-                raw_response=llm_response,
+                error=str(e),
+                raw_response=response,
             )
         
         # Inject app name if provided and missing
         if app_name and "name" not in data:
             data["name"] = app_name
         
-        # Step 3: Validate and create AppResearch object
+        # Step 5: Validate
         try:
-            app_research = self._validate_and_create(data)
-            logger.success(f"Successfully parsed response")
+            app_research = self.validate(data)
+            logger.success("Response parsed and validated successfully")
             return ParseResult(
                 success=True,
                 data=app_research,
-                raw_response=llm_response,
+                raw_response=response,
             )
-        except ValidationError as e:
-            error_msg = f"Validation error: {str(e)}"
-            logger.error(error_msg)
+        except ValidationFailedError as e:
+            logger.error(f"Validation failed: {e}")
             return ParseResult(
                 success=False,
-                error=error_msg,
-                raw_response=llm_response,
+                error=str(e),
+                raw_response=response,
             )
-        except Exception as e:
-            error_msg = f"Unexpected error: {str(e)}"
-            logger.error(error_msg)
-            return ParseResult(
-                success=False,
-                error=error_msg,
-                raw_response=llm_response,
-            )
-
-    def _extract_json(self, text: str) -> Optional[str]:
+    
+    def clean_response(self, response: str) -> str:
         """
-        Extract JSON from LLM response text.
+        Clean LLM response by removing artifacts.
         
-        Handles various formats:
-        - Pure JSON
-        - JSON wrapped in markdown code blocks
-        - JSON with surrounding text
+        Removes:
+        - Markdown code fences
+        - ```json
+        - ```
+        - Accidental text before/after JSON
         
         Args:
-            text: Raw LLM response text
+            response: Raw LLM response
             
         Returns:
-            Extracted JSON string or None
+            Cleaned response string
         """
-        if not text:
-            return None
+        if not response:
+            return ""
         
-        # Try to find JSON in markdown code blocks
-        json_patterns = [
-            r"```json\s*(\{.*?\})\s*```",  # ```json {...} ```
-            r"```\s*(\{.*?\})\s*```",  # ``` {...} ```
-            r"(\{[^{}]*\})",  # Simple JSON object
-        ]
+        text = response.strip()
         
-        for pattern in json_patterns:
-            matches = re.findall(pattern, text, re.DOTALL)
-            if matches:
-                # Try each match
-                for match in matches:
-                    try:
-                        # Validate it's proper JSON
-                        json.loads(match)
-                        return match
-                    except json.JSONDecodeError:
-                        continue
+        # Remove markdown code fences
+        text = re.sub(r"```json\s*", "", text)
+        text = re.sub(r"```\s*", "", text)
         
-        # If no pattern matched, try parsing the whole text
-        try:
-            json.loads(text)
-            return text
-        except json.JSONDecodeError:
-            pass
+        # Remove common prefixes
+        text = re.sub(r"^(Here is|Sure,|Certainly,|Here's|Here's the JSON).*?:\s*", "", text, flags=re.IGNORECASE)
         
-        return None
-
-    def _validate_and_create(self, data: Dict[str, Any]) -> AppResearch:
+        return text.strip()
+    
+    def extract_json(self, response: str) -> str:
         """
-        Validate data and create AppResearch object.
+        Extract JSON from response text.
+        
+        Locates first { and last } to extract JSON object.
         
         Args:
-            data: Dictionary with research data
+            response: Cleaned response text
             
         Returns:
-            AppResearch object
+            Extracted JSON string
             
         Raises:
-            ValidationError: If data is invalid
+            MalformedJSONError: If JSON cannot be located
+        """
+        if not response:
+            raise MalformedJSONError("Empty response")
+        
+        # Find first { and last }
+        start_idx = response.find("{")
+        end_idx = response.rfind("}")
+        
+        if start_idx == -1 or end_idx == -1 or end_idx < start_idx:
+            raise MalformedJSONError("No JSON object found in response")
+        
+        json_str = response[start_idx:end_idx + 1]
+        
+        if not json_str:
+            raise MalformedJSONError("Empty JSON object extracted")
+        
+        logger.debug(f"Extracted JSON: {len(json_str)} chars")
+        return json_str
+    
+    def parse_json(self, json_string: str) -> Dict[str, Any]:
+        """
+        Parse JSON string into dictionary.
+        
+        Args:
+            json_string: JSON string to parse
+            
+        Returns:
+            Parsed dictionary
+            
+        Raises:
+            MalformedJSONError: If JSON is invalid
+        """
+        try:
+            data = json.loads(json_string)
+            if not isinstance(data, dict):
+                raise MalformedJSONError("JSON is not an object")
+            return data
+        except json.JSONDecodeError as e:
+            raise MalformedJSONError(f"Invalid JSON: {str(e)}")
+    
+    def repair_common_errors(self, json_string: str) -> str:
+        """
+        Repair common JSON errors conservatively.
+        
+        Repairs:
+        - Trailing commas before } or ]
+        - Single quotes to double quotes (for keys and string values)
+        - Missing closing braces
+        
+        Does NOT:
+        - Invent values
+        - Fix structural issues
+        - Add missing fields
+        
+        Args:
+            json_string: JSON string to repair
+            
+        Returns:
+            Repaired JSON string
+        """
+        if not json_string:
+            return json_string
+        
+        repaired = json_string
+        
+        # Fix trailing commas (e.g., "key": "value",} -> "key": "value"}
+        repaired = re.sub(r',(\s*[}\]])', r'\1', repaired)
+        
+        # Fix single quotes for keys (e.g., {'key': -> {"key":)
+        # Only fix if the string uses single quotes consistently
+        if "'" in repaired and '"' not in repaired:
+            # Replace single quotes with double quotes
+            repaired = re.sub(r"'([^']+)'", r'"\1"', repaired)
+        
+        # Try to fix missing closing braces
+        open_braces = repaired.count("{") - repaired.count("}")
+        open_brackets = repaired.count("[") - repaired.count("]")
+        
+        if open_braces > 0:
+            repaired += "}" * open_braces
+        if open_brackets > 0:
+            repaired += "]" * open_brackets
+        
+        return repaired
+    
+    def validate(self, app_json: Dict[str, Any]) -> AppResearch:
+        """
+        Validate JSON data against AppResearch model.
+        
+        Args:
+            app_json: Dictionary to validate
+            
+        Returns:
+            Validated AppResearch object
+            
+        Raises:
+            ValidationFailedError: If validation fails
         """
         # Normalize category
-        if "category" in data:
-            data["category"] = self._normalize_category(data["category"])
+        if "category" in app_json:
+            app_json["category"] = self._normalize_category(app_json["category"])
         
         # Normalize auth_methods
-        if "auth_methods" in data:
-            data["auth_methods"] = self._normalize_auth_methods(data["auth_methods"])
+        if "auth_methods" in app_json:
+            app_json["auth_methods"] = self._normalize_auth_methods(app_json["auth_methods"])
         
         # Ensure confidence_score is present
-        if "confidence_score" not in data:
-            data["confidence_score"] = 0.5
+        if "confidence_score" not in app_json:
+            app_json["confidence_score"] = 0.5
         
         # Set default verification_status
-        if "verification_status" not in data:
-            data["verification_status"] = VerificationStatus.PENDING
+        if "verification_status" not in app_json:
+            app_json["verification_status"] = VerificationStatus.PENDING
         
-        # Create AppResearch object
-        return AppResearch(**data)
-
+        try:
+            return AppResearch(**app_json)
+        except ValidationError as e:
+            raise ValidationFailedError(f"Validation error: {str(e)}")
+    
     def _normalize_category(self, category: Any) -> str:
         """
         Normalize category value.
@@ -235,7 +352,7 @@ class ResponseParser:
             return Category.OTHER
         
         return category_normalized
-
+    
     def _normalize_auth_methods(self, auth_methods: Any) -> list:
         """
         Normalize authentication methods.
@@ -272,7 +389,7 @@ class ResponseParser:
                 logger.warning(f"Invalid auth method '{method}', skipping")
         
         return normalized if normalized else [AuthMethod.UNKNOWN]
-
+    
     def parse_with_retry(
         self,
         llm_response: str,
@@ -306,9 +423,8 @@ class ResponseParser:
                 # Try to fix common issues
                 llm_response = self._attempt_fix(llm_response, result.error)
         
-        # All attempts failed
         return result
-
+    
     def _attempt_fix(self, text: str, error: str) -> str:
         """
         Attempt to fix common parsing errors.
@@ -332,7 +448,7 @@ class ResponseParser:
         text = re.sub(r"\s*\.\s*$", "", text)
         
         return text
-
+    
     def validate_existing_data(self, data: Dict[str, Any]) -> Tuple[bool, list]:
         """
         Validate existing research data.
@@ -354,13 +470,17 @@ class ResponseParser:
             return False, errors
 
 
+# ============================================================================
+# Data Enricher
+# ============================================================================
+
 class DataEnricher:
     """
     Enriches parsed data with additional information.
     
     Adds metadata, timestamps, and computed fields.
     """
-
+    
     @staticmethod
     def enrich(app_research: AppResearch) -> AppResearch:
         """
@@ -386,7 +506,7 @@ class DataEnricher:
             app_research.verification_status = VerificationStatus.PENDING
         
         return app_research
-
+    
     @staticmethod
     def calculate_completeness(app_research: AppResearch) -> float:
         """
@@ -419,3 +539,43 @@ class DataEnricher:
             populated += 0.5  # Bonus for having auth methods
         
         return min(populated / len(fields), 1.0)
+
+
+# ============================================================================
+# Self-Test
+# ============================================================================
+
+def _self_test() -> None:
+    """Run self-test with sample malformed responses."""
+    parser = ResponseParser()
+    
+    test_cases = [
+        # 1. Valid JSON
+        ('{"name": "TestApp", "category": "other", "description": "Test", "auth_methods": ["api_key"], "confidence_score": 0.5}', "Valid JSON"),
+        
+        # 2. JSON with markdown code fences
+        ('```json\n{"name": "TestApp", "category": "other", "description": "Test", "auth_methods": ["api_key"], "confidence_score": 0.5}\n```', "Markdown code fences"),
+        
+        # 3. JSON with trailing comma
+        ('{"name": "TestApp", "category": "other", "description": "Test", "auth_methods": ["api_key",], "confidence_score": 0.5}', "Trailing comma"),
+        
+        # 4. JSON with single quotes
+        ("{'name': 'TestApp', 'category': 'other', 'description': 'Test', 'auth_methods': ['api_key'], 'confidence_score': 0.5}", "Single quotes"),
+        
+        # 5. No JSON found
+        ("I cannot find the information you requested.", "No JSON"),
+    ]
+    
+    print("Running self-test...")
+    for response, description in test_cases:
+        result = parser.parse(response)
+        status = "✓ PASS" if (result.success or "No JSON" in description) else "✗ FAIL"
+        print(f"{status}: {description}")
+        if result.success:
+            print(f"  Parsed: {result.data.name}")
+        else:
+            print(f"  Error: {result.error}")
+
+
+if __name__ == "__main__":
+    _self_test()
