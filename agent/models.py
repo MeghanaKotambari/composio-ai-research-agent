@@ -30,6 +30,7 @@ class VerificationStatus(str, Enum):
     PENDING = "pending"
     VERIFIED = "verified"
     NEEDS_REVIEW = "needs_review"
+    MANUAL_REVIEW = "manual_review"
     FAILED = "failed"
 
 
@@ -122,7 +123,7 @@ class AppResearch(BaseModel):
     )
 
     # Evidence
-    evidence_url: Optional[HttpUrl] = Field(
+    evidence_url: Optional[str] = Field(
         None,
         description="URL providing evidence for the research findings",
     )

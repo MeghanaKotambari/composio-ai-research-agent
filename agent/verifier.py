@@ -284,76 +284,125 @@ class VerificationEngine:
             Dictionary with:
             - verified_fields: List of verified field names
             - failed_fields: List of failed field names
+            - field_reasons: Dict mapping field names to detailed reasons
             - warnings: List of warning messages
             - verification_score: Total score (max 100)
             - manual_review_required: Boolean
+            - manual_review_reasons: List of reasons why manual review is needed
         """
         logger.info(f"Starting verification for {app.name}")
         
         verified_fields = []
         failed_fields = []
+        field_reasons: Dict[str, List[str]] = {}
         warnings = []
         total_score = 0
+        manual_review_reasons = []
         
         # Verify auth methods
         auth_result = self.verify_auth(app.auth_methods, documentation_text)
-        if auth_result["verified"]:
+        field_reasons["auth_methods"] = []
+        if auth_result.get("verified"):
             verified_fields.append("auth_methods")
-            total_score += auth_result["score"]
+            total_score += auth_result.get("score", 0)
+            field_reasons["auth_methods"].append(
+                f"Found {len(auth_result['verified'])} auth methods in docs: {auth_result['verified']}"
+            )
         else:
-            failed_fields.append("auth_methods")
-            if auth_result["failed"]:
-                warnings.append(f"Auth methods not found: {auth_result['failed']}")
+            if auth_result.get("verified"):
+                verified_fields.append("auth_methods")
+            if auth_result.get("failed"):
+                failed_fields.append("auth_methods")
+                reason = f"Auth methods not found in docs: {auth_result['failed']}"
+                field_reasons["auth_methods"].append(reason)
+                warnings.append(reason)
         
         # Verify API surface
         api_result = self.verify_api_surface(app.api_surface, documentation_text)
-        if api_result["verified"]:
+        field_reasons["api_surface"] = []
+        if api_result.get("verified"):
             verified_fields.append("api_surface")
-            total_score += api_result["score"]
+            total_score += api_result.get("score", 0)
+            kw = api_result.get("keywords_found", [])
+            field_reasons["api_surface"].append(f"Found API keywords in docs: {kw}")
         else:
             failed_fields.append("api_surface")
+            field_reasons["api_surface"].append("No API keywords found in documentation")
         
         # Verify self-serve
-        self_serve_result = self.verify_self_serve(app.self_serve, documentation_text)
-        if self_serve_result["verified"]:
+        ss_result = self.verify_self_serve(app.self_serve, documentation_text)
+        field_reasons["self_serve"] = []
+        if ss_result.get("verified"):
             verified_fields.append("self_serve")
-            total_score += self_serve_result["score"]
+            total_score += ss_result.get("score", 0)
+            field_reasons["self_serve"].append(
+                f"Self-serve claim ({app.self_serve}) matches docs"
+            )
         else:
             failed_fields.append("self_serve")
+            actual = ss_result.get("actual")
+            field_reasons["self_serve"].append(
+                f"Self-serve claim ({app.self_serve}) differs from docs ({actual})"
+            )
         
         # Verify MCP
         mcp_result = self.verify_mcp(app.mcp_support, documentation_text)
-        if mcp_result["verified"]:
+        field_reasons["mcp_support"] = []
+        if mcp_result.get("verified"):
             verified_fields.append("mcp_support")
-            total_score += mcp_result["score"]
+            total_score += mcp_result.get("score", 0)
+            kw = mcp_result.get("keywords_found", [])
+            field_reasons["mcp_support"].append(f"MCP keywords found: {kw}")
         else:
             failed_fields.append("mcp_support")
+            kw = mcp_result.get("keywords_found", [])
+            field_reasons["mcp_support"].append(
+                f"MCP claim ({app.mcp_support}) but docs suggest ({len(kw) > 0})"
+            )
         
-        # Verify evidence
-        evidence_result = self.verify_evidence(app.evidence_url, app.name)
-        if evidence_result["verified"]:
+        # Verify evidence URL
+        ev_result = self.verify_evidence(app.evidence_url, app.name)
+        field_reasons["evidence_url"] = []
+        if ev_result.get("verified"):
             verified_fields.append("evidence_url")
-            total_score += evidence_result["score"]
+            total_score += ev_result.get("score", 0)
+            field_reasons["evidence_url"].append(
+                f"Evidence URL looks valid: {app.evidence_url}"
+            )
         else:
             failed_fields.append("evidence_url")
+            field_reasons["evidence_url"].append(
+                ev_result.get("warnings", ["No evidence URL provided"])
+            )
         
-        if evidence_result.get("warnings"):
-            warnings.extend(evidence_result["warnings"])
+        if ev_result.get("warnings"):
+            for w in ev_result["warnings"]:
+                if w not in warnings:
+                    warnings.append(w)
         
         # Determine if manual review is required
         manual_review = len(failed_fields) > 2 or total_score < 40
+        if manual_review:
+            if total_score < 40:
+                manual_review_reasons.append(f"Low verification score ({total_score}/100)")
+            if len(failed_fields) > 2:
+                manual_review_reasons.append(
+                    f"Multiple fields failed verification: {failed_fields}"
+                )
         
         result = {
             "verified_fields": verified_fields,
             "failed_fields": failed_fields,
+            "field_reasons": field_reasons,
             "warnings": warnings,
             "verification_score": min(total_score, 100),
             "manual_review_required": manual_review,
+            "manual_review_reasons": manual_review_reasons,
+            "confidence_baseline": round(total_score / 100.0, 2) if total_score > 0 else 0.0,
         }
         
-        # Log summary
         if manual_review:
-            logger.warning(f"Manual review required for {app.name}")
+            logger.warning(f"Manual review required for {app.name}: {manual_review_reasons}")
         else:
             logger.success(f"Verification complete for {app.name}: {total_score}/100")
         

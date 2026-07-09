@@ -16,8 +16,10 @@ from .prompt_builder import PromptBuilder, PromptManager
 from .parser import ResponseParser, DataEnricher
 from .confidence import ConfidenceEstimator
 from .storage import ResearchStorage
+from .cache import DocumentationCache
 
 __all__ = [
+    "DocumentationCache",
     "AppResearch",
     "ResearchBatch",
     "Settings",

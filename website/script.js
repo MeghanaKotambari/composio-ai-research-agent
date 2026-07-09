@@ -1,17 +1,19 @@
 // AI Product Research Agent - Dashboard Script
 
-// Data paths
+// Data paths (relative to website/)
 const DATA_PATHS = {
     statistics: '../output/reports/statistics.json',
     insights: '../output/reports/insights.json',
     clusters: '../output/reports/clusters.json',
-    results: '../output/raw/results.json',
+    results: '../output/reports/results.json',
+    manual_review: '../output/reports/manual_review.json',
 };
 
 // State
 let allResults = [];
 let allStats = null;
 let allInsights = [];
+let allClusters = null;
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
@@ -30,35 +32,41 @@ async function loadAllData() {
         ]);
         
         allStats = stats;
-        allInsights = insights;
-        allResults = results;
+        allInsights = Array.isArray(insights) ? insights : [];
+        allClusters = clusters;
+        allResults = Array.isArray(results) ? results : [];
         
         // Hide loading
-        document.getElementById('loading').style.display = 'none';
+        const loadingEl = document.getElementById('loading');
+        if (loadingEl) loadingEl.style.display = 'none';
         
         // Check if we have data
-        if (!stats && results.length === 0) {
-            document.getElementById('error-state').style.display = 'flex';
+        if (allResults.length === 0) {
+            const errorEl = document.getElementById('error-state');
+            if (errorEl) errorEl.style.display = 'flex';
             return;
         }
         
         // Populate sections
-        populateHero(stats, results);
-        populateInsights(insights);
-        populateMetrics(stats);
-        populateCharts(stats);
-        populateOpportunities(results);
+        populateHero(allStats, allResults);
+        populateInsights(allInsights);
+        populateMetrics(allStats);
+        populateCharts(allStats);
+        populateOpportunities(allResults);
         populateWorkflow();
-        populateVerification(stats);
-        populateTable(results);
+        populateVerification(allStats);
+        populateTable(allResults);
         populateArchitecture();
+        populateCategoryFilter();
+        populateAuthFilter();
         
         // Setup fade-in animations
         setupAnimations();
         
     } catch (error) {
         console.error('Error loading data:', error);
-        document.getElementById('loading').innerHTML = '<p>Error loading data. Run research first.</p>';
+        const loadingEl = document.getElementById('loading');
+        if (loadingEl) loadingEl.innerHTML = '<p>Error loading data. Run research first.</p>';
     }
 }
 
@@ -73,11 +81,15 @@ async function fetchJSON(path) {
 
 // Populate Hero Section
 function populateHero(stats, results) {
-    const totalApps = results?.length || 0;
-    const avgConfidence = results?.reduce((sum, app) => sum + (app.confidence_score || 0), 0) / totalApps || 0;
+    const totalApps = results.length;
+    const avgConfidence = results.reduce((sum, app) => sum + (app.confidence_score || 0), 0) / totalApps || 0;
+    const verifiedCount = results.filter(app => app.verification_status === 'verified').length;
+    const verificationRate = totalApps > 0 ? Math.round(verifiedCount / totalApps * 100) : 0;
     
     animateValue('total-apps', 0, totalApps, 1000);
     document.getElementById('avg-confidence').textContent = `${Math.round(avgConfidence * 100)}%`;
+    document.getElementById('verification-rate').textContent = `${verificationRate}%`;
+    document.getElementById('research-time').textContent = `${totalApps} apps`;
 }
 
 // Animate counter
@@ -100,9 +112,10 @@ function animateValue(id, start, end, duration) {
 // Populate Insights
 function populateInsights(insights) {
     const container = document.getElementById('insights-container');
+    if (!container) return;
     
     if (!insights || insights.length === 0) {
-        container.innerHTML = '<div class="empty-state">No insights available. Run research to generate insights.</div>';
+        container.innerHTML = '<div class="empty-state">No insights available.</div>';
         return;
     }
     
@@ -117,9 +130,8 @@ function populateInsights(insights) {
 // Populate Metrics
 function populateMetrics(stats) {
     const container = document.getElementById('metrics-container');
-    
-    if (!stats) {
-        container.innerHTML = '<div class="empty-state">No metrics available. Run research to generate metrics.</div>';
+    if (!container || !stats) {
+        if (container) container.innerHTML = '<div class="empty-state">No metrics available.</div>';
         return;
     }
     
@@ -146,31 +158,47 @@ function populateMetrics(stats) {
 function populateCharts(stats) {
     if (!stats) return;
     
+    const chartConfig = {
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: {
+            legend: { 
+                position: 'bottom', 
+                labels: { 
+                    color: '#a0a0a0',
+                    boxWidth: 12,
+                    padding: 8,
+                } 
+            }
+        },
+        animation: {
+            duration: 800,
+            easing: 'easeInOutQuart',
+        }
+    };
+    
     // Auth Chart
     const authCtx = document.getElementById('authChart');
     if (authCtx && stats?.authentication?.auth_method_distribution) {
+        destroyChart(authCtx);
         new Chart(authCtx, {
             type: 'doughnut',
             data: {
                 labels: Object.keys(stats.authentication.auth_method_distribution),
                 datasets: [{
                     data: Object.values(stats.authentication.auth_method_distribution),
-                    backgroundColor: ['#00d4ff', '#00ff88', '#ff006e', '#6b00ff', '#ff6b00'],
+                    backgroundColor: ['#00d4ff', '#00ff88', '#ff006e', '#6b00ff', '#ff6b00', '#ffdd00'],
                     borderWidth: 0,
                 }]
             },
-            options: {
-                responsive: true,
-                plugins: {
-                    legend: { position: 'bottom', labels: { color: '#a0a0a0' } }
-                }
-            }
+            options: chartConfig
         });
     }
     
     // Category Chart
     const catCtx = document.getElementById('categoryChart');
     if (catCtx && stats?.categories?.category_distribution) {
+        destroyChart(catCtx);
         new Chart(catCtx, {
             type: 'bar',
             data: {
@@ -182,9 +210,17 @@ function populateCharts(stats) {
                 }]
             },
             options: {
-                responsive: true,
+                ...chartConfig,
                 plugins: { legend: { display: false } },
-                scales: { y: { ticks: { color: '#a0a0a0' } } }
+                scales: { 
+                    y: { 
+                        ticks: { color: '#a0a0a0' },
+                        grid: { color: 'rgba(255,255,255,0.05)' }
+                    },
+                    x: {
+                        ticks: { color: '#a0a0a0' }
+                    }
+                }
             }
         });
     }
@@ -192,6 +228,7 @@ function populateCharts(stats) {
     // API Chart
     const apiCtx = document.getElementById('apiChart');
     if (apiCtx && stats?.api?.api_type_distribution) {
+        destroyChart(apiCtx);
         new Chart(apiCtx, {
             type: 'doughnut',
             data: {
@@ -202,18 +239,14 @@ function populateCharts(stats) {
                     borderWidth: 0,
                 }]
             },
-            options: {
-                responsive: true,
-                plugins: {
-                    legend: { position: 'bottom', labels: { color: '#a0a0a0' } }
-                }
-            }
+            options: chartConfig
         });
     }
     
     // Access Chart
     const accessCtx = document.getElementById('accessChart');
     if (accessCtx && stats?.accessibility) {
+        destroyChart(accessCtx);
         new Chart(accessCtx, {
             type: 'pie',
             data: {
@@ -224,18 +257,14 @@ function populateCharts(stats) {
                     borderWidth: 0,
                 }]
             },
-            options: {
-                responsive: true,
-                plugins: {
-                    legend: { position: 'bottom', labels: { color: '#a0a0a0' } }
-                }
-            }
+            options: chartConfig
         });
     }
     
     // Buildability Chart
     const buildCtx = document.getElementById('buildabilityChart');
     if (buildCtx && stats?.buildability) {
+        destroyChart(buildCtx);
         new Chart(buildCtx, {
             type: 'bar',
             data: {
@@ -247,9 +276,14 @@ function populateCharts(stats) {
                 }]
             },
             options: {
-                responsive: true,
+                ...chartConfig,
                 plugins: { legend: { display: false } },
-                scales: { y: { ticks: { color: '#a0a0a0' } } }
+                scales: { 
+                    y: { 
+                        ticks: { color: '#a0a0a0' },
+                        grid: { color: 'rgba(255,255,255,0.05)' }
+                    }
+                }
             }
         });
     }
@@ -257,6 +291,7 @@ function populateCharts(stats) {
     // Blockers Chart
     const blockCtx = document.getElementById('blockersChart');
     if (blockCtx && stats?.blockers?.blocker_distribution) {
+        destroyChart(blockCtx);
         new Chart(blockCtx, {
             type: 'bar',
             data: {
@@ -268,12 +303,31 @@ function populateCharts(stats) {
                 }]
             },
             options: {
-                responsive: true,
+                ...chartConfig,
                 indexAxis: 'y',
                 plugins: { legend: { display: false } },
-                scales: { x: { ticks: { color: '#a0a0a0' } } }
+                scales: { 
+                    x: { 
+                        ticks: { color: '#a0a0a0' },
+                        grid: { color: 'rgba(255,255,255,0.05)' }
+                    },
+                    y: {
+                        ticks: { color: '#a0a0a0' }
+                    }
+                }
             }
         });
+    }
+}
+
+// Destroy existing chart instance on a canvas
+function destroyChart(canvas) {
+    const charts = Chart.instances;
+    for (const key in charts) {
+        if (charts[key].canvas === canvas) {
+            charts[key].destroy();
+            break;
+        }
     }
 }
 
@@ -293,34 +347,46 @@ function populateOpportunities(results) {
         }
     });
     
-    document.getElementById('easy-wins').innerHTML = easyWins.length > 0
-        ? easyWins.map(app => `<div class="opportunity-item">${escapeHtml(app.name)}</div>`).join('')
-        : '<div class="empty-state">No easy wins found</div>';
+    const easyEl = document.getElementById('easy-wins');
+    const mediumEl = document.getElementById('medium-effort');
+    const highEl = document.getElementById('high-effort');
     
-    document.getElementById('medium-effort').innerHTML = mediumEffort.length > 0
-        ? mediumEffort.map(app => `<div class="opportunity-item">${escapeHtml(app.name)}</div>`).join('')
-        : '<div class="empty-state">No medium effort apps found</div>';
+    if (easyEl) {
+        easyEl.innerHTML = easyWins.length > 0
+            ? easyWins.map(app => `<div class="opportunity-item">${escapeHtml(app.name)}</div>`).join('')
+            : '<div class="empty-state">No easy wins found</div>';
+    }
     
-    document.getElementById('high-effort').innerHTML = highEffort.length > 0
-        ? highEffort.map(app => `<div class="opportunity-item">${escapeHtml(app.name)}</div>`).join('')
-        : '<div class="empty-state">No high effort apps found</div>';
+    if (mediumEl) {
+        mediumEl.innerHTML = mediumEffort.length > 0
+            ? mediumEffort.map(app => `<div class="opportunity-item">${escapeHtml(app.name)}</div>`).join('')
+            : '<div class="empty-state">No medium effort apps found</div>';
+    }
+    
+    if (highEl) {
+        highEl.innerHTML = highEffort.length > 0
+            ? highEffort.map(app => `<div class="opportunity-item">${escapeHtml(app.name)}</div>`).join('')
+            : '<div class="empty-state">No high effort apps found</div>';
+    }
 }
 
 // Populate Workflow
 function populateWorkflow() {
     const steps = [
         { name: '100 Apps', icon: '📱' },
-        { name: 'Documentation Discovery', icon: '🔍' },
+        { name: 'Doc Discovery', icon: '🔍' },
         { name: 'Web Research', icon: '🌐' },
         { name: 'Prompt Builder', icon: '✍️' },
         { name: 'LLM Extraction', icon: '🤖' },
         { name: 'Response Parser', icon: '📄' },
-        { name: 'Verification Engine', icon: '✅' },
-        { name: 'Pattern Detection', icon: '📊' },
-        { name: 'Interactive Dashboard', icon: '📈' },
+        { name: 'Verification', icon: '✅' },
+        { name: 'Analytics', icon: '📊' },
+        { name: 'Dashboard', icon: '📈' },
     ];
     
     const container = document.getElementById('workflow-container');
+    if (!container) return;
+    
     container.innerHTML = steps.map((step, i) => `
         <div class="workflow-step fade-in">
             <div class="workflow-icon">${step.icon}</div>
@@ -333,6 +399,7 @@ function populateWorkflow() {
 // Populate Verification
 function populateVerification(stats) {
     const container = document.getElementById('verification-container');
+    if (!container) return;
     
     if (!stats) {
         container.innerHTML = '<div class="empty-state">No verification data available</div>';
@@ -340,10 +407,10 @@ function populateVerification(stats) {
     }
     
     const metrics = [
-        { label: 'Verified', value: stats?.verification_rate || 0 },
-        { label: 'Manual Review', value: stats?.manual_review || 0 },
-        { label: 'Failed Fields', value: stats?.failed_fields || 0 },
-        { label: 'Warnings', value: stats?.warnings || 0 },
+        { label: 'Verified', value: stats?.verification?.verified || 0 },
+        { label: 'Manual Review', value: stats?.verification?.manual_review || 0 },
+        { label: 'Pending', value: stats?.verification?.pending || 0 },
+        { label: 'Rate', value: stats?.verification?.verification_rate ? `${stats.verification.verification_rate}%` : '0%' },
     ];
     
     container.innerHTML = metrics.map(m => `
@@ -357,6 +424,7 @@ function populateVerification(stats) {
 // Populate Table
 function populateTable(results) {
     const tbody = document.getElementById('table-body');
+    if (!tbody) return;
     
     if (!results || results.length === 0) {
         tbody.innerHTML = '<tr><td colspan="7" class="empty-state">No data available. Run research first.</td></tr>';
@@ -368,33 +436,70 @@ function populateTable(results) {
             <td>${escapeHtml(app.name || 'Unknown')}</td>
             <td>${escapeHtml(app.category || 'other')}</td>
             <td>${(app.auth_methods || []).map(a => escapeHtml(a)).join(', ')}</td>
-            <td>${app.self_serve ? 'Yes' : 'No'}</td>
+            <td>${app.self_serve ? 'Yes' : app.self_serve === false ? 'No' : 'Unknown'}</td>
             <td>${escapeHtml(app.buildability || 'Unknown')}</td>
             <td>${Math.round((app.confidence_score || 0) * 100)}%</td>
-            <td>${app.evidence_url ? `<a href="${escapeHtml(app.evidence_url)}" target="_blank">Link</a>` : '—'}</td>
+            <td>${app.evidence_url ? `<a href="${escapeHtml(app.evidence_url)}" target="_blank" rel="noopener">Link</a>` : '—'}</td>
         </tr>
     `).join('');
 }
 
 // Populate Architecture
 function populateArchitecture() {
+    const container = document.getElementById('architecture-container');
+    if (!container) return;
+    
     const nodes = [
         'ResearchAgent',
         'Workflow',
-        'WebResearch',
+        'Doc Discovery',
+        'Web Research',
         'Prompt Builder',
         'LLM Provider',
         'Response Parser',
-        'Verification Engine',
-        'Analytics Engine',
+        'Verification',
+        'Analytics',
         'Dashboard',
     ];
     
-    const container = document.getElementById('architecture-container');
     container.innerHTML = nodes.map((node, i) => `
         <div class="arch-node fade-in">${node}</div>
         ${i < nodes.length - 1 ? '<div class="workflow-arrow">↓</div>' : ''}
     `).join('');
+}
+
+// Populate Category Filter
+function populateCategoryFilter() {
+    const filter = document.getElementById('category-filter');
+    if (!filter) return;
+    
+    const categories = [...new Set(allResults.map(app => app.category).filter(Boolean))];
+    categories.sort();
+    
+    categories.forEach(cat => {
+        const option = document.createElement('option');
+        option.value = cat;
+        option.textContent = cat.charAt(0).toUpperCase() + cat.slice(1).replace(/_/g, ' ');
+        filter.appendChild(option);
+    });
+}
+
+// Populate Auth Filter
+function populateAuthFilter() {
+    const filter = document.getElementById('auth-filter');
+    if (!filter) return;
+    
+    const authMethods = new Set();
+    allResults.forEach(app => {
+        (app.auth_methods || []).forEach(m => authMethods.add(m));
+    });
+    
+    [...authMethods].sort().forEach(method => {
+        const option = document.createElement('option');
+        option.value = method;
+        option.textContent = method.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+        filter.appendChild(option);
+    });
 }
 
 // Setup Event Listeners
@@ -416,9 +521,12 @@ function filterTable() {
     
     const rows = document.querySelectorAll('#table-body tr');
     rows.forEach(row => {
-        const name = row.cells[0].textContent.toLowerCase();
-        const cat = row.cells[1].textContent;
-        const authMethods = row.cells[2].textContent;
+        const cells = row.cells;
+        if (!cells || cells.length < 3) return;
+        
+        const name = cells[0]?.textContent?.toLowerCase() || '';
+        const cat = cells[1]?.textContent || '';
+        const authMethods = cells[2]?.textContent || '';
         
         const matchesSearch = name.includes(search);
         const matchesCategory = !category || cat === category;
@@ -445,7 +553,8 @@ function setupAnimations() {
 
 // Escape HTML
 function escapeHtml(text) {
+    if (text === null || text === undefined) return '';
     const div = document.createElement('div');
-    div.textContent = text;
+    div.textContent = String(text);
     return div.innerHTML;
 }

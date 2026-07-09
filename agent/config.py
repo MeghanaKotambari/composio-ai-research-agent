@@ -47,6 +47,7 @@ class Settings:
         self.VERIFIED_OUTPUT_DIR: Path = self.OUTPUT_DIR / "verified"
         self.REPORTS_DIR: Path = self.OUTPUT_DIR / "reports"
         self.CHARTS_DIR: Path = self.OUTPUT_DIR / "charts"
+        self.CACHE_DIR: Path = self.OUTPUT_DIR / "cache"
 
         # Research settings
         self.MAX_RETRIES: int = int(os.getenv("MAX_RETRIES", "3"))

@@ -142,9 +142,13 @@ class ResponseParser:
                 raw_response=response,
             )
         
-        # Inject app name if provided and missing
-        if app_name and "name" not in data:
+        # CRITICAL: Always inject the original app name from apps.json
+        # Never allow the LLM to return "Unknown", null, or empty name.
+        # The original application identity must never be lost.
+        if app_name:
             data["name"] = app_name
+        elif "name" not in data or not data.get("name"):
+            data["name"] = "Unknown_App"
         
         # Step 5: Validate
         try:

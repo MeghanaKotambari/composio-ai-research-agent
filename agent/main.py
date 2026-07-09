@@ -32,6 +32,7 @@ from .config import settings
 from .logger import get_logger, setup_logger
 from .research_agent import ResearchAgent, create_research_agent
 from .models import AppResearch
+from .analyzer import AnalyticsEngine
 
 # Initialize console and logger
 console = Console()
@@ -146,6 +147,24 @@ def run_research(
             
             # Show summary
             _show_summary(summary)
+            
+            # Generate analytics reports
+            console.print("\n[yellow][i][/yellow] Generating analytics reports...")
+            try:
+                from .analyzer import AnalyticsEngine
+                analytics = AnalyticsEngine()
+                # Load results from storage
+                from .storage import ResearchStorage
+                storage = ResearchStorage(settings.OUTPUT_DIR)
+                results = storage.load_all_results()
+                analytics.load_apps(results)
+                saved_files = analytics.save_reports()
+                
+                console.print("[green][+][/green] Reports generated:")
+                for name, path in saved_files.items():
+                    console.print(f"  [dim]  ↳ {path.name}[/dim]")
+            except Exception as e:
+                logger.warning(f"Analytics report generation failed: {e}")
             
     except KeyboardInterrupt:
         console.print("\n[yellow][!][/yellow] Interrupted by user. Progress saved.")
