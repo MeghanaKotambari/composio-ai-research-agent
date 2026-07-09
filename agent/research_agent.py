@@ -14,10 +14,10 @@ Responsibilities:
 - Skip already completed apps
 """
 
+import time
 from typing import Dict, List, Optional, Any, Protocol, runtime_checkable
 from pathlib import Path
 from datetime import datetime
-import json
 
 from rich.progress import (
     Progress,
@@ -35,7 +35,11 @@ from .logger import get_logger
 from .models import AppResearch
 from .utils import read_json
 from .storage import ResearchStorage
-
+from .web_research import WebResearchService
+from .llm.base import BaseLLMProvider
+from .llm.factory import LLMFactory
+from .workflow import ResearchWorkflow
+from .verifier import VerificationEngine
 
 logger = get_logger(__name__)
 console = Console()
@@ -83,18 +87,37 @@ class ResearchAgent:
         self,
         research_service: Optional[ResearchService] = None,
         output_dir: Optional[Path] = None,
+        llm_provider: Optional[BaseLLMProvider] = None,
     ) -> None:
         """
         Initialize research agent with dependency injection.
         
         Args:
-            research_service: Research service instance (required for processing)
+            research_service: Research service instance (for backward compatibility)
             output_dir: Output directory (defaults to settings.OUTPUT_DIR)
+            llm_provider: LLM provider instance (created from config if not provided)
         """
-        self.research_service = research_service
         self.storage = ResearchStorage(output_dir or settings.OUTPUT_DIR)
         self.apps: List[Dict[str, Any]] = []
         self.existing_results: Dict[str, AppResearch] = {}
+        
+        # Create LLM provider from config if not provided
+        self.llm_provider = llm_provider or LLMFactory.create()
+        
+        # Create web research service
+        self.web_research = WebResearchService()
+        
+        # Create workflow with dependency injection
+        self.workflow = ResearchWorkflow(
+            web_research=self.web_research,
+            llm_provider=self.llm_provider,
+        )
+        
+        # Create verification engine
+        self.verifier = VerificationEngine()
+        
+        # For backward compatibility
+        self.research_service = research_service
         
         logger.info("Research Agent initialized")
     
@@ -193,7 +216,13 @@ class ResearchAgent:
         force: bool = False,
     ) -> Optional[AppResearch]:
         """
-        Process a single application using the injected research service.
+        Process a single application using the workflow.
+        
+        Pipeline:
+        1. Check if already processed
+        2. Run workflow (fetch docs, call LLM, parse)
+        3. Run verification
+        4. Save result
         
         Args:
             app: App dictionary with name and website
@@ -214,20 +243,41 @@ class ResearchAgent:
             logger.info(f"{app_name} already processed, skipping")
             return self.storage.load_result(app_name)
         
-        # Ensure research service is available
-        if self.research_service is None:
-            logger.error("No research service configured")
-            return None
+        # Use workflow if no research_service provided
+        if self.research_service:
+            try:
+                result = self.research_service.research(app)
+                self.save_result(result)
+                return result
+            except Exception as e:
+                logger.error(f"Failed to process {app_name}: {e}")
+                self.storage.mark_processed(app_name, success=False, error=str(e))
+                return None
         
+        # Use workflow
         try:
-            # Delegate to the research service
-            result = self.research_service.research(app)
+            # Execute workflow
+            result = self.workflow.execute(app)
             
-            # Save the result
-            self.save_result(result)
-            
-            return result
-            
+            if result:
+                # Run verification
+                doc_result = self.web_research.research_source(app.get("website", ""))
+                verification = self.verifier.verify(
+                    result,
+                    doc_result.get("text", ""),
+                )
+                
+                # Save verification report
+                self.verifier.save_verification_report(app_name, verification)
+                
+                # Save the result
+                self.save_result(result)
+                
+                return result
+            else:
+                self.storage.mark_processed(app_name, success=False, error="Workflow failed")
+                return None
+                
         except Exception as e:
             logger.error(f"Failed to process {app_name}: {e}")
             self.storage.mark_processed(app_name, success=False, error=str(e))
@@ -265,7 +315,6 @@ class ResearchAgent:
         resume support in case of interruption.
         """
         # Progress is automatically saved by storage after each app
-        # This method exists for explicit progress saving if needed
         progress = self.storage.get_progress()
         logger.debug(f"Progress saved: {progress}")
     
@@ -401,7 +450,7 @@ class ResearchAgent:
     
     def close(self) -> None:
         """Close all resources."""
-        # No resources to close currently
+        self.web_research.close()
         logger.debug("Research agent resources closed")
     
     def __enter__(self) -> "ResearchAgent":
@@ -411,3 +460,35 @@ class ResearchAgent:
     def __exit__(self, exc_type, exc_val, exc_tb) -> None:
         """Context manager exit."""
         self.close()
+
+
+# Factory function for easy setup
+def create_research_agent(
+    provider_type: str = "mock",
+    output_dir: Optional[Path] = None,
+    max_retries: int = 3,
+    **provider_kwargs,
+) -> ResearchAgent:
+    """
+    Create a research agent with specified provider.
+    
+    Args:
+        provider_type: LLM provider type ('mock', 'openrouter', 'openai', 'anthropic', 'groq')
+        output_dir: Output directory
+        max_retries: Maximum retries
+        **provider_kwargs: Additional provider arguments
+        
+    Returns:
+        ResearchAgent instance
+    """
+    # Create LLM client
+    llm_client = LLMFactory.create(provider_type, **provider_kwargs)
+    
+    # Create storage
+    storage = ResearchStorage(output_dir or settings.OUTPUT_DIR)
+    
+    # Create agent
+    return ResearchAgent(
+        llm_provider=llm_client,
+        output_dir=output_dir,
+    )

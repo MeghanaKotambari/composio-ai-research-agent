@@ -11,6 +11,7 @@ Usage:
 """
 
 import sys
+import time
 from pathlib import Path
 from typing import Optional, List, Dict, Any
 
@@ -66,7 +67,6 @@ def run_research(
     agent = create_research_agent(
         provider_type=provider,
         output_dir=settings.OUTPUT_DIR,
-        max_retries=max_retries,
     )
     
     try:
@@ -87,11 +87,10 @@ def run_research(
             TaskProgressColumn(),
             TimeRemainingColumn(),
             console=console,
-            transient=False,
         ) as progress:
             
             task = progress.add_task(
-                "[cyan]Researching apps...[/cyan]",
+                "Loading apps...",
                 total=len(apps)
             )
             
@@ -124,28 +123,30 @@ def run_research(
                     continue
                 
                 # Process app
-                success, result, error = agent.process_app(app, force=force)
+                start_time = time.time()
+                result = agent.process_single_app(app, force=force)
+                elapsed = time.time() - start_time
                 
-                if success:
+                if result:
                     summary["processed"] += 1
-                    if result:
-                        summary["results"].append(result)
-                        progress.console.print(
-                            f"[green]  ↳ {app_name}[/green] "
-                            f"Confidence: [bold]{result.confidence_score:.0%}[/bold]"
-                        )
+                    summary["results"].append(result)
+                    progress.console.print(
+                        f"[green]  ↳ {app_name}[/green] "
+                        f"Confidence: [bold]{result.confidence_score:.0%}[/bold] "
+                        f"[dim]({elapsed:.1f}s)[/dim]"
+                    )
                 else:
                     summary["failed"] += 1
-                    summary["errors"].append({"app": app_name, "error": error})
+                    summary["errors"].append({"app": app_name, "error": "Processing failed"})
                     progress.console.print(
-                        f"[red]  ↳ {app_name} failed: {error}[/red]"
+                        f"[red]  ↳ {app_name} failed[/red]"
                     )
                 
                 progress.advance(task)
-        
-        # Show summary
-        _show_summary(summary)
-        
+            
+            # Show summary
+            _show_summary(summary)
+            
     except KeyboardInterrupt:
         console.print("\n[yellow][!][/yellow] Interrupted by user. Progress saved.")
         console.print("[dim]Run 'python -m agent.main resume' to continue.[/dim]")
@@ -196,15 +197,44 @@ def run_resume() -> None:
                 total=len(pending)
             )
             
-            summary = agent.resume()
+            summary = {
+                "total": len(pending),
+                "processed": 0,
+                "failed": 0,
+                "skipped": 0,
+                "results": [],
+                "errors": [],
+            }
             
-            # Update progress based on summary
-            processed = summary.get("processed", 0)
-            for _ in range(processed):
+            for app in pending:
+                app_name = app.get("name", "Unknown")
+                
+                progress.update(
+                    task,
+                    description=f"[cyan]Processing {app_name}[/cyan]"
+                )
+                
+                start_time = time.time()
+                result = agent.process_single_app(app, force=False)
+                elapsed = time.time() - start_time
+                
+                if result:
+                    summary["processed"] += 1
+                    progress.console.print(
+                        f"[green]  ↳ {app_name}[/green] "
+                        f"Confidence: [bold]{result.confidence_score:.0%}[/bold] "
+                        f"[dim]({elapsed:.1f}s)[/dim]"
+                    )
+                else:
+                    summary["failed"] += 1
+                    progress.console.print(
+                        f"[red]  ↳ {app_name} failed[/red]"
+                    )
+                
                 progress.advance(task)
-        
-        _show_summary(summary)
-        
+            
+            _show_summary(summary)
+            
     except Exception as e:
         logger.error(f"Resume failed: {e}")
         console.print(f"[red]✗[/red] Resume failed: {e}")
@@ -314,7 +344,7 @@ def main() -> None:
         "--provider",
         "-p",
         default="mock",
-        choices=["mock", "openai", "anthropic", "groq"],
+        choices=["mock", "openai", "anthropic", "groq", "openrouter"],
         help="LLM provider to use"
     )
     research_parser.add_argument(
