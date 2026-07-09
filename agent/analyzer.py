@@ -1,9 +1,8 @@
 """
 Analytics module for the AI Research Agent.
 
-This module provides analytics and statistics generation for researched applications.
-All methods are currently skeletons - implementation will be added when integrating
-with actual research data.
+Analyzes researched dataset and discovers meaningful product insights.
+Identifies patterns across SaaS applications.
 
 Responsibilities:
 - Authentication statistics
@@ -11,14 +10,21 @@ Responsibilities:
 - API statistics
 - Buildability insights
 - Confidence analysis
+- Pattern detection
+- Opportunity identification
 """
 
+import json
 from typing import Any, Dict, List, Optional
 from pathlib import Path
 from collections import Counter, defaultdict
 
+from .logger import get_logger
 from .models import AppResearch, Category, AuthMethod, VerificationStatus
-from .utils import export_to_csv, write_json
+from .storage import ResearchStorage
+from .config import settings
+
+logger = get_logger(__name__)
 
 
 class AnalyticsEngine:
@@ -26,10 +32,10 @@ class AnalyticsEngine:
     Analytics engine for analyzing research data.
     
     Provides comprehensive analytics on researched applications including
-    statistics, trends, and insights generation.
+    statistics, trends, insights generation, and opportunity detection.
     """
-
-    def __init__(self, apps: Optional[List[AppResearch]] = None):
+    
+    def __init__(self, apps: Optional[List[AppResearch]] = None) -> None:
         """
         Initialize analytics engine.
         
@@ -38,7 +44,7 @@ class AnalyticsEngine:
         """
         self.apps = apps or []
         self._cache: Dict[str, Any] = {}
-
+    
     def load_apps(self, apps: List[AppResearch]) -> None:
         """
         Load applications for analysis.
@@ -48,43 +54,46 @@ class AnalyticsEngine:
         """
         self.apps = apps
         self._cache.clear()
-
-    def load_from_json(self, file_path: Path) -> None:
-        """
-        Load applications from JSON file.
-        
-        Args:
-            file_path: Path to JSON file containing research data
-        """
-        from .utils import read_json
-        data = read_json(file_path)
-        # TODO: Implement deserialization to AppResearch objects
-        # self.apps = [AppResearch(**item) for item in data]
-        pass
-
+    
+    def load_from_storage(self) -> None:
+        """Load applications from storage."""
+        storage = ResearchStorage(settings.OUTPUT_DIR)
+        self.apps = storage.load_all_results()
+        self._cache.clear()
+        logger.info(f"Loaded {len(self.apps)} apps from storage")
+    
     # ============================================================================
     # Authentication Statistics
     # ============================================================================
-
+    
     def get_auth_statistics(self) -> Dict[str, Any]:
         """
         Generate authentication method statistics.
         
         Returns:
-            Dictionary containing:
-            - total_apps_with_auth: Count of apps with auth methods
-            - auth_method_distribution: Count of each auth method
-            - most_common_methods: Top 5 most common auth methods
-            - auth_by_category: Auth methods grouped by category
-            - multi_auth_percentage: Percentage of apps with multiple auth methods
+            Dictionary with auth method distribution and analysis
         """
-        # TODO: Implement authentication statistics
-        # 1. Count total apps with auth methods
-        # 2. Calculate distribution of each auth method
-        # 3. Group by category
-        # 4. Calculate multi-auth percentage
-        pass
-
+        auth_counter = Counter()
+        auth_by_category: Dict[str, Counter] = defaultdict(Counter)
+        multi_auth_count = 0
+        
+        for app in self.apps:
+            if app.auth_methods:
+                auth_counter.update(app.auth_methods)
+                if len(app.auth_methods) > 1:
+                    multi_auth_count += 1
+            
+            for method in app.auth_methods:
+                auth_by_category[app.category].update([method])
+        
+        return {
+            "total_apps_with_auth": sum(auth_counter.values()),
+            "auth_method_distribution": dict(auth_counter),
+            "most_common_methods": [m for m, _ in auth_counter.most_common(5)],
+            "auth_by_category": {k: dict(v) for k, v in auth_by_category.items()},
+            "multi_auth_percentage": (multi_auth_count / len(self.apps) * 100) if self.apps else 0,
+        }
+    
     def get_auth_trends_by_category(self) -> Dict[str, List[str]]:
         """
         Analyze authentication trends across categories.
@@ -92,254 +101,391 @@ class AnalyticsEngine:
         Returns:
             Dictionary mapping categories to their most common auth methods
         """
-        # TODO: Implement auth trends analysis
-        pass
-
+        auth_by_category: Dict[str, Counter] = defaultdict(Counter)
+        
+        for app in self.apps:
+            for method in app.auth_methods:
+                auth_by_category[app.category].update([method])
+        
+        return {
+            cat: [m for m, _ in counter.most_common(3)]
+            for cat, counter in auth_by_category.items()
+        }
+    
     # ============================================================================
     # Category Statistics
     # ============================================================================
-
+    
     def get_category_statistics(self) -> Dict[str, Any]:
         """
         Generate category distribution statistics.
         
         Returns:
-            Dictionary containing:
-            - total_categories: Number of unique categories
-            - category_distribution: Count of apps per category
-            - most_common_category: Most frequent category
-            - least_common_categories: Categories with fewest apps
-            - category_percentages: Percentage distribution
+            Dictionary with category distribution
         """
-        # TODO: Implement category statistics
-        # 1. Count apps per category
-        # 2. Calculate percentages
-        # 3. Identify most/least common
-        pass
-
-    def get_category_insights(self) -> Dict[str, Dict[str, Any]]:
-        """
-        Generate insights for each category.
+        category_counter = Counter(app.category for app in self.apps)
         
-        Returns:
-            Dictionary mapping categories to insights including:
-            - app_count
-            - avg_confidence
-            - avg_buildability
-            - common_blockers
-            - verification_rate
-        """
-        # TODO: Implement category insights
-        pass
-
+        return {
+            "total_categories": len(category_counter),
+            "category_distribution": dict(category_counter),
+            "most_common_category": category_counter.most_common(1)[0][0] if category_counter else None,
+            "category_percentages": {
+                cat: count / len(self.apps) * 100
+                for cat, count in category_counter.items()
+            },
+        }
+    
     # ============================================================================
     # API Statistics
     # ============================================================================
-
+    
     def get_api_statistics(self) -> Dict[str, Any]:
         """
         Generate API surface statistics.
         
         Returns:
-            Dictionary containing:
-            - apps_with_api: Count of apps with documented APIs
-            - api_coverage_percentage: Percentage with API documentation
-            - common_api_features: Most common API capabilities
-            - api_quality_distribution: Distribution of API quality ratings
+            Dictionary with API analysis
         """
-        # TODO: Implement API statistics
-        pass
-
-    def get_api_complexity_analysis(self) -> Dict[str, Any]:
+        api_keywords = ["rest", "graphql", "sdk", "webhook", "openapi"]
+        api_counts = {kw: 0 for kw in api_keywords}
+        api_counts["mixed"] = 0
+        
+        for app in self.apps:
+            if app.api_surface:
+                found = []
+                for kw in api_keywords:
+                    if kw in app.api_surface.lower():
+                        found.append(kw)
+                if len(found) > 1:
+                    api_counts["mixed"] += 1
+                elif found:
+                    api_counts[found[0]] += 1
+        
+        return {
+            "apps_with_api": sum(1 for app in self.apps if app.api_surface),
+            "api_coverage_percentage": sum(1 for app in self.apps if app.api_surface) / len(self.apps) * 100 if self.apps else 0,
+            "api_type_distribution": api_counts,
+        }
+    
+    # ============================================================================
+    # Accessibility Statistics
+    # ============================================================================
+    
+    def get_accessibility_statistics(self) -> Dict[str, Any]:
         """
-        Analyze API complexity across applications.
+        Generate accessibility statistics.
         
         Returns:
-            Dictionary containing complexity metrics
+            Dictionary with self-serve and access analysis
         """
-        # TODO: Implement API complexity analysis
-        pass
-
-    # ============================================================================
-    # Buildability Insights
-    # ============================================================================
-
-    def get_buildability_insights(self) -> Dict[str, Any]:
-        """
-        Generate buildability insights.
+        self_serve_count = sum(1 for app in self.apps if app.self_serve is True)
+        enterprise_only_count = sum(1 for app in self.apps if app.self_serve is False)
+        unknown_count = sum(1 for app in self.apps if app.self_serve is None)
         
-        Returns:
-            Dictionary containing:
-            - high_buildability_count: Apps rated as high
-            - medium_buildability_count: Apps rated as medium
-            - low_buildability_count: Apps rated as low
-            - buildability_by_category: Buildability grouped by category
-            - common_high_buildability_features: Features of highly buildable apps
-            - common_blockers: Most common blockers
-        """
-        # TODO: Implement buildability insights
-        pass
-
-    def get_blocker_analysis(self) -> Dict[str, Any]:
-        """
-        Analyze common blockers across applications.
-        
-        Returns:
-            Dictionary containing:
-            - most_common_blockers: Top blockers
-            - blockers_by_category: Blockers grouped by category
-            - blocker_severity: Severity assessment
-        """
-        # TODO: Implement blocker analysis
-        pass
-
+        return {
+            "self_serve": self_serve_count,
+            "enterprise_only": enterprise_only_count,
+            "unknown": unknown_count,
+            "self_serve_percentage": self_serve_count / len(self.apps) * 100 if self.apps else 0,
+        }
+    
     # ============================================================================
-    # Confidence Analysis
+    # MCP Statistics
     # ============================================================================
-
-    def get_confidence_analysis(self) -> Dict[str, Any]:
-        """
-        Analyze confidence scores across research data.
-        
-        Returns:
-            Dictionary containing:
-            - average_confidence: Mean confidence score
-            - confidence_distribution: Score ranges and counts
-            - low_confidence_apps: Apps with confidence < 0.5
-            - high_confidence_apps: Apps with confidence > 0.8
-            - confidence_by_category: Average confidence per category
-        """
-        # TODO: Implement confidence analysis
-        pass
-
-    def get_verification_statistics(self) -> Dict[str, Any]:
-        """
-        Generate verification status statistics.
-        
-        Returns:
-            Dictionary containing:
-            - verification_rate: Percentage of verified apps
-            - status_distribution: Count per status
-            - needs_review_count: Apps needing review
-            - failed_verification_count: Failed verifications
-        """
-        # TODO: Implement verification statistics
-        pass
-
-    # ============================================================================
-    # MCP Analysis
-    # ============================================================================
-
+    
     def get_mcp_statistics(self) -> Dict[str, Any]:
         """
         Generate MCP support statistics.
         
         Returns:
-            Dictionary containing:
-            - mcp_support_rate: Percentage with MCP support
-            - mcp_by_category: MCP support grouped by category
-            - mcp_vs_buildability: Correlation between MCP and buildability
+            Dictionary with MCP analysis
         """
-        # TODO: Implement MCP statistics
-        pass
-
-    # ============================================================================
-    # Comprehensive Reports
-    # ============================================================================
-
-    def generate_summary_report(self) -> Dict[str, Any]:
-        """
-        Generate comprehensive summary report.
+        mcp_available = sum(1 for app in self.apps if app.mcp_support is True)
+        mcp_not_available = sum(1 for app in self.apps if app.mcp_support is False)
+        mcp_unknown = sum(1 for app in self.apps if app.mcp_support is None)
         
-        Returns:
-            Dictionary containing all analytics summaries
-        """
-        # TODO: Implement summary report generation
-        # Combine all analytics into single report
-        pass
-
-    def export_analytics(self, output_dir: Path, format: str = "json") -> List[Path]:
-        """
-        Export analytics to files.
-        
-        Args:
-            output_dir: Directory to save analytics files
-            format: Export format ('json' or 'csv')
-            
-        Returns:
-            List of exported file paths
-        """
-        # TODO: Implement analytics export
-        # Export each analytics section to separate files
-        pass
-
-    # ============================================================================
-    # Data Quality Metrics
-    # ============================================================================
-
-    def get_data_quality_metrics(self) -> Dict[str, Any]:
-        """
-        Generate data quality metrics.
-        
-        Returns:
-            Dictionary containing:
-            - completeness_score: Percentage of fields populated
-            - missing_data_distribution: Missing data by field
-            - data_freshness: Age of research data
-            - verification_coverage: Percentage verified
-        """
-        # TODO: Implement data quality metrics
-        pass
-
-
-class ReportGenerator:
-    """
-    Report generator for creating formatted reports from analytics.
+        return {
+            "available": mcp_available,
+            "not_available": mcp_not_available,
+            "unknown": mcp_unknown,
+            "mcp_support_rate": mcp_available / len(self.apps) * 100 if self.apps else 0,
+        }
     
-    Supports multiple output formats including JSON, CSV, and HTML.
-    """
-
-    def __init__(self, analytics: AnalyticsEngine):
+    # ============================================================================
+    # Buildability Statistics
+    # ============================================================================
+    
+    def get_buildability_statistics(self) -> Dict[str, Any]:
         """
-        Initialize report generator.
+        Generate buildability statistics.
         
-        Args:
-            analytics: AnalyticsEngine instance with loaded data
+        Returns:
+            Dictionary with buildability analysis
         """
-        self.analytics = analytics
-
-    def generate_json_report(self, output_path: Path) -> Path:
-        """
-        Generate JSON report.
+        buildability_counter = Counter(app.buildability for app in self.apps if app.buildability)
         
-        Args:
-            output_path: Path to save report
+        return {
+            "easy": buildability_counter.get("high", 0),
+            "medium": buildability_counter.get("medium", 0),
+            "hard": buildability_counter.get("low", 0),
+            "blocked": sum(1 for app in self.apps if app.main_blocker),
+            "buildability_distribution": dict(buildability_counter),
+        }
+    
+    # ============================================================================
+    # Main Blockers Analysis
+    # ============================================================================
+    
+    def get_blocker_clusters(self) -> Dict[str, Any]:
+        """
+        Cluster and analyze main blockers.
+        
+        Returns:
+            Dictionary with blocker analysis
+        """
+        blocker_counter = Counter(app.main_blocker for app in self.apps if app.main_blocker)
+        
+        # Normalize blocker names
+        normalized = {}
+        for blocker, count in blocker_counter.items():
+            key = blocker.lower().strip()
+            if "api" in key and "public" in key:
+                normalized["No Public API"] = normalized.get("No Public API", 0) + count
+            elif "enterprise" in key:
+                normalized["Enterprise Only"] = normalized.get("Enterprise Only", 0) + count
+            elif "partner" in key:
+                normalized["Partner Approval"] = normalized.get("Partner Approval", 0) + count
+            elif "beta" in key:
+                normalized["Private Beta"] = normalized.get("Private Beta", 0) + count
+            elif "oauth" in key:
+                normalized["No OAuth"] = normalized.get("No OAuth", 0) + count
+            else:
+                normalized[blocker] = count
+        
+        return {
+            "blocker_distribution": normalized,
+            "top_blockers": sorted(normalized.items(), key=lambda x: -x[1])[:5],
+            "total_blocked": sum(1 for app in self.apps if app.main_blocker),
+        }
+    
+    # ============================================================================
+    # Insights Engine
+    # ============================================================================
+    
+    def generate_insights(self) -> List[Dict[str, str]]:
+        """
+        Generate meaningful insights from the data.
+        
+        Returns:
+            List of insight dictionaries
+        """
+        insights = []
+        
+        # Get statistics
+        auth_stats = self.get_auth_statistics()
+        category_stats = self.get_category_statistics()
+        api_stats = self.get_api_statistics()
+        access_stats = self.get_accessibility_statistics()
+        mcp_stats = self.get_mcp_statistics()
+        build_stats = self.get_buildability_statistics()
+        
+        # Insight 1: CRM platforms and OAuth
+        crm_apps = [app for app in self.apps if app.category == "crm"]
+        crm_oauth = sum(1 for app in crm_apps if "oauth2" in app.auth_methods)
+        if crm_apps and crm_oauth / len(crm_apps) > 0.5:
+            insights.append({
+                "insight": "Most CRM platforms support OAuth",
+                "evidence": f"{crm_oauth}/{len(crm_apps)} CRM apps have OAuth support",
+                "category": "authentication",
+            })
+        
+        # Insight 2: Finance APIs are gated
+        finance_apps = [app for app in self.apps if app.category == "finance"]
+        finance_gated = sum(1 for app in finance_apps if app.self_serve is False)
+        if finance_apps and finance_gated / len(finance_apps) > 0.5:
+            insights.append({
+                "insight": "Finance APIs are significantly more gated",
+                "evidence": f"{finance_gated}/{len(finance_apps)} finance apps require sales contact",
+                "category": "accessibility",
+            })
+        
+        # Insight 3: Developer tools are self-serve
+        dev_apps = [app for app in self.apps if app.category == "developer_tools"]
+        dev_self_serve = sum(1 for app in dev_apps if app.self_serve is True)
+        if dev_apps and dev_self_serve / len(dev_apps) > 0.7:
+            insights.append({
+                "insight": "Developer tools are usually self-serve",
+                "evidence": f"{dev_self_serve}/{len(dev_apps)} developer tools offer self-signup",
+                "category": "accessibility",
+            })
+        
+        # Insight 4: Marketing APIs require verification
+        marketing_apps = [app for app in self.apps if app.category == "marketing"]
+        marketing_blocked = sum(1 for app in marketing_apps if app.main_blocker)
+        if marketing_apps and marketing_blocked / len(marketing_apps) > 0.3:
+            insights.append({
+                "insight": "Marketing APIs often require business verification",
+                "evidence": f"{marketing_blocked}/{len(marketing_apps)} marketing apps have blockers",
+                "category": "buildability",
+            })
+        
+        # Insight 5: API key prevalence
+        api_key_count = auth_stats["auth_method_distribution"].get("api_key", 0)
+        if api_key_count > len(self.apps) * 0.5:
+            insights.append({
+                "insight": "API Key is the most common authentication method",
+                "evidence": f"{api_key_count} apps support API key authentication",
+                "category": "authentication",
+            })
+        
+        # Insight 6: REST API dominance
+        rest_count = api_stats["api_type_distribution"].get("rest", 0)
+        if rest_count > len(self.apps) * 0.4:
+            insights.append({
+                "insight": "REST APIs dominate the landscape",
+                "evidence": f"{rest_count} apps have REST API documentation",
+                "category": "api",
+            })
+        
+        # Insight 7: MCP adoption is low
+        if mcp_stats["mcp_support_rate"] < 20:
+            insights.append({
+                "insight": "MCP adoption is still early",
+                "evidence": f"Only {mcp_stats['mcp_support_rate']:.0f}% of apps support MCP",
+                "category": "mcp",
+            })
+        
+        # Insight 8: High buildability correlation with self-serve
+        high_build_self_serve = sum(
+            1 for app in self.apps
+            if app.buildability == "high" and app.self_serve is True
+        )
+        high_build_count = build_stats["easy"]
+        if high_build_count and high_build_self_serve / high_build_count > 0.7:
+            insights.append({
+                "insight": "Self-serve access strongly correlates with high buildability",
+                "evidence": f"{high_build_self_serve}/{high_build_count} high-buildability apps are self-serve",
+                "category": "buildability",
+            })
+        
+        # Insight 9: Database APIs are well-documented
+        db_apps = [app for app in self.apps if app.category == "database"]
+        db_api = sum(1 for app in db_apps if app.api_surface)
+        if db_apps and db_api / len(db_apps) > 0.8:
+            insights.append({
+                "insight": "Database services have excellent API documentation",
+                "evidence": f"{db_api}/{len(db_apps)} database apps have API surface documented",
+                "category": "api",
+            })
+        
+        # Insight 10: Security tools are restrictive
+        security_apps = [app for app in self.apps if app.category == "security"]
+        security_blocked = sum(1 for app in security_apps if app.main_blocker)
+        if security_apps and security_blocked / len(security_apps) > 0.5:
+            insights.append({
+                "insight": "Security tools have the most integration restrictions",
+                "evidence": f"{security_blocked}/{len(security_apps)} security apps have blockers",
+                "category": "buildability",
+            })
+        
+        logger.info(f"Generated {len(insights)} insights")
+        return insights
+    
+    # ============================================================================
+    # Opportunity Detector
+    # ============================================================================
+    
+    def generate_opportunities(self) -> Dict[str, Any]:
+        """
+        Generate opportunity analysis.
+        
+        Returns:
+            Dictionary with easy_wins, medium_effort, high_effort lists
+        """
+        opportunities = {
+            "easy_wins": [],
+            "medium_effort": [],
+            "high_effort": [],
+        }
+        
+        for app in self.apps:
+            # Easy wins: self-serve, high buildability, no blockers
+            if (
+                app.self_serve is True
+                and app.buildability == "high"
+                and not app.main_blocker
+            ):
+                opportunities["easy_wins"].append({
+                    "name": app.name,
+                    "category": app.category,
+                    "reason": "Self-serve with high buildability and no blockers",
+                })
             
-        Returns:
-            Path to generated report
-        """
-        # TODO: Implement JSON report generation
-        pass
-
-    def generate_csv_report(self, output_path: Path) -> Path:
-        """
-        Generate CSV report.
-        
-        Args:
-            output_path: Path to save report
+            # Medium effort: self-serve but medium buildability
+            elif (
+                app.self_serve is True
+                and app.buildability in ["medium", "high"]
+            ):
+                opportunities["medium_effort"].append({
+                    "name": app.name,
+                    "category": app.category,
+                    "reason": f"Self-serve but {app.buildability} buildability",
+                })
             
-        Returns:
-            Path to generated report
+            # High effort: enterprise only or has blockers
+            elif app.self_serve is False or app.main_blocker:
+                opportunities["high_effort"].append({
+                    "name": app.name,
+                    "category": app.category,
+                    "reason": "Requires sales contact or has integration blockers",
+                })
+        
+        logger.info(f"Generated opportunities: {len(opportunities['easy_wins'])} easy, "
+                   f"{len(opportunities['medium_effort'])} medium, "
+                   f"{len(opportunities['high_effort'])} high")
+        
+        return opportunities
+    
+    # ============================================================================
+    # Report Generation
+    # ============================================================================
+    
+    def generate_statistics_report(self) -> Dict[str, Any]:
         """
-        # TODO: Implement CSV report generation
-        pass
-
-    def generate_summary_text(self) -> str:
-        """
-        Generate text summary of analytics.
+        Generate comprehensive statistics report.
         
         Returns:
-            Formatted text summary
+            Dictionary with all statistics
         """
-        # TODO: Implement text summary generation
-        pass
+        return {
+            "authentication": self.get_auth_statistics(),
+            "categories": self.get_category_statistics(),
+            "api": self.get_api_statistics(),
+            "accessibility": self.get_accessibility_statistics(),
+            "mcp": self.get_mcp_statistics(),
+            "buildability": self.get_buildability_statistics(),
+            "blockers": self.get_blocker_clusters(),
+        }
+    
+    def save_reports(self) -> None:
+        """Save all reports to output/reports/."""
+        reports_dir = settings.REPORTS_DIR
+        reports_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Save statistics
+        stats = self.generate_statistics_report()
+        with open(reports_dir / "statistics.json", "w") as f:
+            json.dump(stats, f, indent=2, default=str)
+        logger.info("Statistics report saved")
+        
+        # Save insights
+        insights = self.generate_insights()
+        with open(reports_dir / "insights.json", "w") as f:
+            json.dump(insights, f, indent=2)
+        logger.info("Insights report saved")
+        
+        # Save clusters
+        clusters = self.get_blocker_clusters()
+        with open(reports_dir / "clusters.json", "w") as f:
+            json.dump(clusters, f, indent=2)
+        logger.info("Clusters report saved")
