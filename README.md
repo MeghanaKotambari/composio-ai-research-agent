@@ -4,7 +4,7 @@ A modular, AI-powered research system for analyzing SaaS applications and determ
 
 ## Project Overview
 
-The AI Research Agent is designed to analyze 100 SaaS applications and extract structured information including:
+The AI Research Agent analyzes 100+ SaaS applications and extracts structured information including:
 
 - Application category and description
 - Authentication methods
@@ -18,15 +18,18 @@ The AI Research Agent is designed to analyze 100 SaaS applications and extract s
 
 The analyzed data is presented through an interactive HTML dashboard with charts, filters, and detailed views.
 
-## Objective
+## Quick Start
 
-Build a production-ready research system that:
+```bash
+# Install dependencies
+pip install -r requirements.txt
 
-1. **Discovers** SaaS applications from curated lists
-2. **Researches** each application using AI/LLM-powered analysis
-3. **Verifies** research data for accuracy and quality
-4. **Analyzes** patterns and generates insights
-5. **Presents** findings in an interactive dashboard
+# Run research (with mock provider)
+python -m agent.main research --provider mock --limit 10
+
+# View dashboard
+# Open website/index.html in browser
+```
 
 ## Folder Structure
 
@@ -35,15 +38,25 @@ project-root/
 │
 ├── agent/                          # Python backend
 │   ├── __init__.py                 # Package initialization
-│   ├── main.py                     # Main orchestrator and CLI entry point
-│   ├── config.py                   # Configuration management (dotenv)
+│   ├── main.py                     # CLI entry point
+│   ├── config.py                   # Configuration management
 │   ├── logger.py                   # Logging utility (Rich)
 │   ├── models.py                   # Pydantic data models
-│   ├── utils.py                    # Utility functions (JSON, CSV, retry, etc.)
-│   ├── prompts.py                  # LLM prompt templates
-│   ├── analyzer.py                 # Analytics engine (skeleton)
-│   ├── verifier.py                 # Verification module (skeleton)
-│   └── apps.json                   # List of 100 SaaS applications
+│   ├── utils.py                    # Utility functions
+│   ├── storage.py                  # Research storage
+│   ├── web_research.py             # Web scraping
+│   ├── prompt_builder.py           # LLM prompt generation
+│   ├── parser.py                   # Response parsing
+│   ├── verifier.py                 # Verification engine
+│   ├── analyzer.py                 # Analytics engine
+│   ├── workflow.py                 # Research workflow
+│   ├── research_agent.py           # Main orchestrator
+│   ├── llm/                        # LLM providers
+│   │   ├── base.py                 # Base provider
+│   │   ├── mock.py                 # Mock provider
+│   │   ├── openrouter.py           # OpenRouter provider
+│   │   └── factory.py              # Provider factory
+│   └── apps.json                   # 107 SaaS applications
 │
 ├── output/                         # Output directories
 │   ├── raw/                        # Raw research data
@@ -54,11 +67,7 @@ project-root/
 ├── website/                        # Frontend dashboard
 │   ├── index.html                  # Main dashboard page
 │   ├── styles.css                  # Dashboard styles
-│   ├── script.js                   # Dashboard logic
-│   └── assets/                     # Static assets
-│
-├── docs/                           # Documentation
-├── screenshots/                    # Screenshots for README
+│   └── script.js                   # Dashboard logic
 │
 ├── requirements.txt                # Python dependencies
 ├── README.md                       # This file
@@ -67,61 +76,32 @@ project-root/
 └── LICENSE                         # License file
 ```
 
-## Planned Workflow
+## Implementation Status
 
-### 1. Application Discovery
-- Load application list from `agent/apps.json`
-- Validate application names and URLs
-- Prepare research queue
+### ✅ Fully Implemented
 
-### 2. Research Phase
-- Fetch website content using Playwright/Requests
-- Extract information using LLM (OpenAI/Anthropic)
-- Structure data using Pydantic models
-- Save raw research data to `output/raw/`
+| Module | Description |
+|--------|-------------|
+| `config.py` | Configuration with dotenv, output directories |
+| `logger.py` | Rich logging with color-coded output |
+| `models.py` | Pydantic models for AppResearch, enums |
+| `storage.py` | JSON storage with progress tracking |
+| `web_research.py` | Documentation fetching with BeautifulSoup |
+| `prompt_builder.py` | LLM prompt generation with JSON enforcement |
+| `parser.py` | Response parsing with repair logic |
+| `verifier.py` | Deterministic verification engine |
+| `analyzer.py` | Analytics with insights and patterns |
+| `workflow.py` | Research pipeline orchestration |
+| `research_agent.py` | Main agent with resume support |
+| `main.py` | CLI with Rich progress bars |
+| `llm/` | Mock, OpenRouter, and factory providers |
+| `website/` | Premium SaaS dashboard with Chart.js |
 
-### 3. Verification Phase
-- Validate research data completeness
-- Cross-reference with multiple sources
-- Calculate quality and confidence scores
-- Update verification status
-- Save verified data to `output/verified/`
+### 🟡 Partially Implemented
 
-### 4. Analytics Phase
-- Generate category statistics
-- Analyze authentication patterns
-- Assess buildability insights
-- Calculate confidence metrics
-- Generate comprehensive reports
-
-### 5. Dashboard Presentation
-- Load verified data
-- Render interactive charts
-- Display filterable table
-- Show detailed application views
-- Export analytics
-
-## Tech Stack
-
-### Backend
-- **Python 3.12+** - Core language
-- **Pydantic** - Data validation and models
-- **Pandas** - Data manipulation and analysis
-- **Requests** - HTTP requests
-- **BeautifulSoup4** - Web scraping
-- **Playwright** - Browser automation
-- **Rich** - Beautiful console output
-- **python-dotenv** - Environment configuration
-
-### Frontend
-- **HTML5** - Structure
-- **CSS3** - Styling with CSS variables
-- **Vanilla JavaScript** - Dashboard logic
-- **Chart.js** - Data visualization
-
-### Deployment
-- **GitHub Pages** - Frontend hosting
-- **GitHub Repository** - Version control
+| Module | Description |
+|--------|-------------|
+| `apps.json` | 107 apps loaded (target was 100) |
 
 ## Architecture
 
@@ -135,91 +115,28 @@ The project follows **SOLID principles** and **clean architecture**:
 4. **Interface Segregation** - Focused, cohesive interfaces
 5. **Dependency Inversion** - Dependencies on abstractions, not concretions
 
-### Module Responsibilities
-
-#### Core Modules
-
-**config.py** - Configuration Management
-- Loads environment variables from `.env`
-- Provides centralized settings access
-- Manages output directories
-- Prepares API key management for future providers
-
-**logger.py** - Logging Utility
-- Centralized logging with Rich
-- Color-coded output (info, warning, error, success)
-- Console and file logging support
-- Structured log formatting
-
-**models.py** - Data Models
-- Pydantic models for type safety
-- Validation and serialization
-- Enums for controlled vocabularies
-- Batch processing support
-
-**utils.py** - Utility Functions
-- JSON read/write operations
-- CSV export functionality
-- URL validation and normalization
-- Retry mechanisms with exponential backoff
-- Data transformation helpers
-
-**prompts.py** - Prompt Templates
-- Structured LLM prompts
-- Prompt builder pattern
-- System prompts for different roles
-- Template management
-
-#### Business Logic Modules
-
-**analyzer.py** - Analytics Engine (Skeleton)
-- Authentication statistics
-- Category distribution analysis
-- API surface statistics
-- Buildability insights
-- Confidence score analysis
-- MCP support statistics
-- Report generation
-
-**verifier.py** - Verification Module (Skeleton)
-- Data validation
-- Cross-reference verification
-- Quality scoring
-- Consistency checks
-- Batch verification
-- Quality assurance
-
-**main.py** - Main Orchestrator (Skeleton)
-- Application discovery
-- Research workflow
-- Verification workflow
-- Analytics workflow
-- Data management
-- Dashboard preparation
-- CLI interface
-
 ### Data Flow
 
 ```
 ┌─────────────────┐
 │  apps.json      │
-│  (100 apps)     │
+│  (107 apps)     │
 └────────┬────────┘
          │
          ▼
 ┌─────────────────┐
 │  ResearchAgent  │
-│  (main.py)      │
+│  (orchestrator) │
 └────────┬────────┘
          │
     ┌────┴────┐
     │         │
     ▼         ▼
 ┌───────┐ ┌────────┐
-│Research│ │Verify  │
-│Phase  │ │Phase   │
-└───┬───┘ └───┬────┘
-    │         │
+│Workflow│ │Verify  │
+│(fetch)│ │(deter- │
+└───┬───┘ │ ministic)│
+    │     └───┬────┘
     ▼         ▼
 ┌───────┐ ┌────────┐
 │  Raw  │ │Verified│
@@ -231,17 +148,8 @@ The project follows **SOLID principles** and **clean architecture**:
          ▼
 ┌─────────────────┐
 │   Analyzer      │
-│  (analytics)    │
+│  (insights)     │
 └────────┬────────┘
-         │
-    ┌────┴────┐
-    │         │
-    ▼         ▼
-┌───────┐ ┌────────┐
-│Reports│ │Charts  │
-└───┬───┘ └───┬────┘
-    │         │
-    └────┬────┘
          │
          ▼
 ┌─────────────────┐
@@ -250,227 +158,55 @@ The project follows **SOLID principles** and **clean architecture**:
 └─────────────────┘
 ```
 
-## Future Implementation Plan
+## Key Features
 
-### Phase 1: Core Infrastructure (Current)
-- ✅ Project structure setup
-- ✅ Configuration management
-- ✅ Logging system
-- ✅ Data models with Pydantic
-- ✅ Utility functions
-- ✅ Prompt templates structure
-- ✅ Frontend dashboard skeleton
-- ✅ Documentation
+### 1. Resume Support
+- Progress saved after each app in `output/raw/processed.json`
+- Interrupted runs can be resumed with `python -m agent.main resume`
 
-### Phase 2: Research Implementation
-- [ ] LLM provider integration (OpenAI/Anthropic)
-- [ ] Web scraping with Playwright
-- [ ] Research workflow implementation
-- [ ] Data extraction and structuring
-- [ ] Error handling and retries
+### 2. Dependency Injection
+- LLM providers injected via `LLMFactory`
+- Research services can be swapped without code changes
 
-### Phase 3: Verification & Quality
-- [ ] Verification logic implementation
-- [ ] Cross-reference checking
-- [ ] Quality scoring algorithms
-- [ ] Consistency validation
-- [ ] Batch processing
+### 3. Deterministic Verification
+- No LLM calls during verification
+- Keyword matching against documentation
+- Apps flagged for manual review when needed
 
-### Phase 4: Analytics & Reporting
-- [ ] Statistics calculation
-- [ ] Report generation (JSON/CSV/HTML)
-- [ ] Chart data preparation
-- [ ] Insight generation
-- [ ] Export functionality
+### 4. Pattern Detection
+- Insights generated from cross-category analysis
+- Opportunities categorized by effort level
+- Blocker clustering for Product Ops
 
-### Phase 5: Dashboard Enhancement
-- [ ] Real-time data loading
-- [ ] Advanced filtering
-- [ ] Interactive charts
-- [ ] Export capabilities
-- [ ] Responsive improvements
+## Tech Stack
 
-### Phase 6: Production Readiness
-- [ ] Testing suite (pytest)
-- [ ] CI/CD pipeline
-- [ ] Error monitoring
-- [ ] Performance optimization
-- [ ] Documentation completion
+### Backend
+- **Python 3.12+** - Core language
+- **Pydantic** - Data validation and models
+- **Rich** - Beautiful console output
+- **BeautifulSoup4** - Web scraping
+- **python-dotenv** - Environment configuration
 
-## Code Quality Standards
+### Frontend
+- **HTML5** - Structure
+- **CSS3** - Dark theme with glassmorphism
+- **Vanilla JavaScript** - Dashboard logic
+- **Chart.js** - Data visualization
 
-This project maintains high code quality through:
+## Limitations
 
-- **Type Hints** - All functions and methods are typed
-- **Docstrings** - Comprehensive documentation for all modules
-- **Modular Architecture** - Separation of concerns
-- **SOLID Principles** - Clean, maintainable design
-- **Consistent Naming** - Clear, descriptive names
-- **Error Handling** - Proper exception management
-- **Logging** - Structured logging throughout
-- **Validation** - Pydantic models for data integrity
+- Possible LLM hallucinations in extracted data
+- Need for manual review on low-confidence results
+- Enterprise documentation may require authentication
+- Rate limits on web research and LLM API calls
+- Static analysis cannot capture dynamic API behavior
 
-## Getting Started
+## Future Improvements
 
-### Prerequisites
-
-- Python 3.12 or higher
-- pip package manager
-- Git
-
-### Installation
-
-1. Clone the repository:
-```bash
-git clone https://github.com/MeghanaKotambari/composio-ai-research-agent.git
-cd composio-ai-research-agent
-```
-
-2. Create virtual environment:
-```bash
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-```
-
-3. Install dependencies:
-```bash
-pip install -r requirements.txt
-```
-
-4. Install Playwright browsers:
-```bash
-playwright install
-```
-
-5. Configure environment:
-```bash
-cp .env.example .env
-# Edit .env with your API keys and settings
-```
-
-### Usage
-
-#### Command Line Interface
-
-```bash
-# Research applications
-python -m agent.main research --input agent/apps.json --output output/raw
-
-# Verify research data
-python -m agent.main verify --input output/raw/apps.json --output output/verified
-
-# Analyze verified data
-python -m agent.main analyze --input output/verified/apps.json --output output/reports
-
-# Generate dashboard data
-python -m agent.main dashboard --input output/verified/apps.json --output website/data
-```
-
-#### Dashboard
-
-Open `website/index.html` in a web browser to view the dashboard.
-
-For GitHub Pages deployment, the dashboard will be available at:
-`https://<username>.github.io/composio-ai-research-agent/`
-
-## Development
-
-### Running Tests
-
-```bash
-pytest
-```
-
-### Code Formatting
-
-```bash
-black agent/ website/
-isort agent/ website/
-```
-
-### Type Checking
-
-```bash
-mypy agent/
-```
-
-### Linting
-
-```bash
-flake8 agent/
-```
-
-## Architecture Decisions
-
-### Why This Architecture Supports Scalability and Maintainability
-
-#### 1. **Modular Design**
-Each module has a single responsibility, making it easy to:
-- Understand individual components
-- Test in isolation
-- Update without affecting other modules
-- Reuse across projects
-
-#### 2. **Pydantic Models**
-- Type safety prevents runtime errors
-- Automatic validation ensures data integrity
-- Easy serialization/deserialization
-- Self-documenting code through field descriptions
-
-#### 3. **Configuration Management**
-- Centralized settings via dotenv
-- Easy to switch between environments
-- No hardcoded values
-- Extensible for future API keys
-
-#### 4. **Logging Strategy**
-- Structured logging with Rich
-- Different log levels for different contexts
-- Easy debugging and monitoring
-- Production-ready logging setup
-
-#### 5. **Utility Functions**
-- Reusable across modules
-- Well-tested interfaces
-- Consistent error handling
-- Reduces code duplication
-
-#### 6. **Prompt Management**
-- Centralized prompt templates
-- Easy to iterate on prompts
-- Version control friendly
-- Supports multiple LLM providers
-
-#### 7. **Frontend Separation**
-- Pure HTML/CSS/JS (no build step)
-- Easy to deploy to GitHub Pages
-- Fast development iteration
-- No framework lock-in
-
-#### 8. **Skeleton Pattern**
-- Clear interfaces defined early
-- Implementation can proceed in parallel
-- Easy to track progress
-- Reduces integration issues
-
-#### 9. **Type Hints Everywhere**
-- Better IDE support
-- Catches errors early
-- Self-documenting code
-- Easier refactoring
-
-#### 10. **Extensibility**
-- Easy to add new LLM providers
-- Simple to extend data models
-- Pluggable verification strategies
-- Flexible analytics engine
-
-## Contributing
-
-This is a take-home assignment project. Contributions are not expected but the architecture is designed to be:
-- Easy to understand
-- Simple to extend
-- Ready for production enhancement
+- Automatic browser agent (Playwright)
+- Parallel research processing
+- Continuous monitoring
+- MCP discovery automation
 
 ## License
 
@@ -479,7 +215,3 @@ MIT License - See LICENSE file for details
 ## Contact
 
 Built for Composio AI Product Ops Intern Take-Home Assignment
-
----
-
-**Note**: This project is currently in architecture setup phase. Research logic, verification algorithms, and analytics calculations will be implemented in future phases.
