@@ -15,6 +15,7 @@ from .llm.base import BaseLLMProvider
 from .prompt_builder import PromptBuilder
 from .parser import ResponseParser, DataEnricher
 from .confidence import ConfidenceEstimator
+from .verifier import VerificationEngine
 
 logger = get_logger(__name__)
 
@@ -44,6 +45,7 @@ class ResearchWorkflow:
         self.prompt_builder = PromptBuilder()
         self.parser = ResponseParser()
         self.confidence_estimator = ConfidenceEstimator()
+        self.verifier = VerificationEngine()
         
         logger.info("ResearchWorkflow initialized")
     
@@ -179,6 +181,29 @@ class ResearchWorkflow:
         logger.info(f"Confidence score: {confidence:.0%}")
         return confidence
     
+    def verify_result(self, app: Dict[str, Any], app_research: AppResearch) -> Dict[str, Any]:
+        """
+        Verify research result against documentation.
+        
+        Args:
+            app: App dictionary
+            app_research: AppResearch object to verify
+            
+        Returns:
+            Verification result dictionary
+        """
+        logger.info(f"Verifying {app_research.name}")
+        
+        # Fetch documentation for verification
+        doc_result = self.fetch_documentation(app.get("website", ""))
+        
+        verification = self.verifier.verify(
+            app_research,
+            doc_result.get("text", ""),
+        )
+        
+        return verification
+    
     def save_result(self, app_research: AppResearch) -> None:
         """
         Save the research result.
@@ -194,6 +219,12 @@ class ResearchWorkflow:
     def execute(self, app: Dict[str, Any]) -> Optional[AppResearch]:
         """
         Execute the complete research workflow for an application.
+        
+        Includes verification loop:
+        1. Research
+        2. Verify
+        3. Low score? -> Refetch + Rerun
+        4. Manual review flag
         
         Args:
             app: App dictionary with name and website
@@ -235,21 +266,84 @@ class ResearchWorkflow:
         confidence = self.estimate_confidence(app_research)
         app_research.confidence_score = confidence
         
-        # Step 8: Retry if confidence is low
-        if confidence < 0.7:
-            logger.warning(f"Low confidence ({confidence:.0%}), retrying...")
+        # Step 8: Verify result
+        verification = self.verify_result(app, app_research)
+        
+        # Step 9: Verification loop - retry if low score
+        if verification.get("verification_score", 0) < 40:
+            logger.warning(f"Low verification score ({verification.get('verification_score')}), retrying with improved context")
+            app_research = self._retry_with_verification(app, context, app_research)
+            
+            if app_research:
+                verification = self.verify_result(app, app_research)
+        
+        # Step 10: Set manual review flag
+        if verification.get("manual_review_required", False):
+            app_research.verification_status = "manual_review"
+            logger.warning(f"Manual review required for {app_name}")
+        
+        # Step 11: Retry if confidence is low
+        if app_research.confidence_score < 0.7:
+            logger.warning(f"Low confidence ({app_research.confidence_score:.0%}), retrying...")
             app_research = self._retry_with_refinement(app, context, app_research)
         
-        # Step 9: Enrich data
+        # Step 12: Enrich data
         app_research = DataEnricher.enrich(app_research)
         
-        # Step 10: Save result
+        # Step 13: Save result
         self.save_result(app_research)
         
         elapsed = time.time() - start_time
         logger.success(f"Workflow complete for {app_name} in {elapsed:.2f}s")
         
         return app_research
+    
+    def _retry_with_verification(
+        self,
+        app: Dict[str, Any],
+        context: str,
+        previous_result: AppResearch,
+    ) -> Optional[AppResearch]:
+        """
+        Retry research with improved context for better verification.
+        
+        Args:
+            app: App dictionary
+            context: Context text
+            previous_result: Previous result
+            
+        Returns:
+            Improved AppResearch object if successful, original otherwise
+        """
+        app_name = app.get("name", "Unknown")
+        
+        logger.info(f"Retrying with improved context for {app_name}")
+        
+        # Build improvement prompt
+        improvement_prompt = f"""Improve the research for {app_name} based on verification feedback.
+        
+Previous result had low verification score. Focus on finding:
+- Authentication methods in documentation
+- API surface details
+- Self-serve availability
+- MCP support
+- Evidence URLs
+        
+Documentation:
+{context[:2000]}
+        
+Return improved JSON:"""
+        
+        # Call LLM with improvement
+        llm_response = self.call_llm(improvement_prompt)
+        
+        # Parse improved response
+        improved = self.parse_response(llm_response, app_name)
+        
+        if improved:
+            return improved
+        
+        return previous_result
     
     def _retry_with_refinement(
         self,
