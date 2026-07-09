@@ -1,399 +1,384 @@
 """
-Verification module for the AI Research Agent.
+Verification Engine for the AI Research Agent.
 
-This module handles verification and quality assurance of research data.
-All methods are currently skeletons - implementation will be added when integrating
-with actual research workflows and LLM providers.
-
-Responsibilities:
-- Research data validation
-- Cross-referencing with sources
-- Quality scoring
-- Consistency checks
-- Evidence verification
+Validates whether extracted research is supported by official documentation.
+All verification is deterministic - no LLM calls.
 """
 
-from typing import Any, Dict, List, Optional, Tuple
+import json
+from typing import Any, Dict, List, Optional
 from pathlib import Path
-from datetime import datetime
+from urllib.parse import urlparse
 
-from .models import AppResearch, VerificationStatus
-from .utils import is_valid_url, make_request
+from .logger import get_logger
+from .models import AppResearch, AuthMethod, VerificationStatus
+from .config import settings
+
+logger = get_logger(__name__)
 
 
-class ResearchVerifier:
+class VerificationEngine:
     """
-    Verifier for research data quality and accuracy.
+    Deterministic verification engine for research data.
     
-    Provides comprehensive verification of research findings including
-    validation, cross-referencing, and quality scoring.
+    Validates extracted information against documentation text
+    without using LLM. All checks are based on keyword matching.
     """
-
-    def __init__(self, apps: Optional[List[AppResearch]] = None):
-        """
-        Initialize research verifier.
-        
-        Args:
-            apps: Optional list of AppResearch objects to verify
-        """
-        self.apps = apps or []
-        self.verification_results: Dict[str, Dict[str, Any]] = {}
-
-    def load_apps(self, apps: List[AppResearch]) -> None:
-        """
-        Load applications for verification.
-        
-        Args:
-            apps: List of AppResearch objects
-        """
-        self.apps = apps
-        self.verification_results.clear()
-
-    # ============================================================================
-    # Data Validation
-    # ============================================================================
-
-    def validate_research_data(self, app: AppResearch) -> Tuple[bool, List[str]]:
-        """
-        Validate research data for completeness and correctness.
-        
-        Args:
-            app: AppResearch object to validate
-            
-        Returns:
-            Tuple of (is_valid, list_of_issues)
-        """
-        # TODO: Implement data validation
-        # 1. Check required fields are populated
-        # 2. Validate data types and formats
-        # 3. Check for logical consistency
-        # 4. Verify confidence score is justified
-        pass
-
-    def validate_url(self, url: Optional[str]) -> Tuple[bool, str]:
-        """
-        Validate evidence URL.
-        
-        Args:
-            url: URL to validate
-            
-        Returns:
-            Tuple of (is_valid, message)
-        """
-        if not url:
-            return False, "No evidence URL provided"
-        
-        if not is_valid_url(url):
-            return False, f"Invalid URL format: {url}"
-        
-        # TODO: Check if URL is accessible
-        return True, "URL is valid"
-
-    def validate_auth_methods(self, auth_methods: List[str]) -> Tuple[bool, List[str]]:
-        """
-        Validate authentication methods.
-        
-        Args:
-            auth_methods: List of auth method strings
-            
-        Returns:
-            Tuple of (is_valid, list_of_issues)
-        """
-        # TODO: Implement auth method validation
-        # 1. Check against known auth methods
-        # 2. Validate combinations
-        # 3. Check for contradictions
-        pass
-
-    # ============================================================================
-    # Cross-Reference Verification
-    # ============================================================================
-
-    def cross_reference_sources(
+    
+    # Keywords for auth method detection
+    AUTH_KEYWORDS = {
+        AuthMethod.API_KEY: ["api key", "apikey", "api-key", "secret key", "access key"],
+        AuthMethod.OAUTH2: ["oauth2", "oauth 2", "oauth", "authorization code", "access token"],
+        AuthMethod.BASIC_AUTH: ["basic auth", "basic authentication", "username password"],
+        AuthMethod.JWT: ["jwt", "json web token", "bearer token"],
+        AuthMethod.BEARER_TOKEN: ["bearer token", "bearer", "token authentication"],
+        AuthMethod.OAUTH1: ["oauth1", "oauth 1"],
+    }
+    
+    # Keywords for API surface detection
+    API_KEYWORDS = ["rest", "graphql", "webhook", "sdk", "openapi", "api reference", "api docs"]
+    
+    # Keywords for self-serve detection
+    SELF_SERVE_POSITIVE = ["sign up", "get started", "free trial", "developer portal", "create account"]
+    SELF_SERVE_NEGATIVE = ["contact sales", "enterprise only", "request access", "gated", "sales team"]
+    
+    # Keywords for MCP detection
+    MCP_KEYWORDS = ["mcp", "model context protocol", "agent", "tool calling", "function calling"]
+    
+    def __init__(self) -> None:
+        """Initialize verification engine."""
+        self.verified_dir = settings.VERIFIED_OUTPUT_DIR
+        self.verified_dir.mkdir(parents=True, exist_ok=True)
+    
+    def verify_auth(
         self,
-        app: AppResearch,
-        sources: List[str],
+        auth_methods: List[str],
+        documentation_text: str,
     ) -> Dict[str, Any]:
         """
-        Cross-reference research data with multiple sources.
+        Verify authentication methods against documentation.
+        
+        Checks if OAuth, API Key, Bearer, Basic Auth, Token
+        appear in documentation text.
+        
+        Args:
+            auth_methods: List of claimed auth methods
+            documentation_text: Documentation to search
+            
+        Returns:
+            Dictionary with verification results
+        """
+        doc_lower = documentation_text.lower()
+        verified = []
+        failed = []
+        
+        for method in auth_methods:
+            # Check if method keywords appear in documentation
+            keywords = self.AUTH_KEYWORDS.get(method, [])
+            found = any(kw in doc_lower for kw in keywords)
+            
+            if found:
+                verified.append(method)
+                logger.info(f"Verified auth method: {method}")
+            else:
+                failed.append(method)
+                logger.warning(f"Auth method not found in docs: {method}")
+        
+        return {
+            "verified": verified,
+            "failed": failed,
+            "score": len(verified) * 20,
+        }
+    
+    def verify_api_surface(
+        self,
+        api_surface: Optional[str],
+        documentation_text: str,
+    ) -> Dict[str, Any]:
+        """
+        Verify API surface claims against documentation.
+        
+        Looks for REST, GraphQL, Webhook, SDK, OpenAPI keywords.
+        
+        Args:
+            api_surface: Claimed API surface description
+            documentation_text: Documentation to search
+            
+        Returns:
+            Dictionary with verification results
+        """
+        if not api_surface:
+            return {"verified": False, "score": 0, "warnings": ["No API surface claimed"]}
+        
+        doc_lower = documentation_text.lower()
+        found_keywords = []
+        
+        for keyword in self.API_KEYWORDS:
+            if keyword in doc_lower:
+                found_keywords.append(keyword)
+        
+        verified = len(found_keywords) > 0
+        
+        if verified:
+            logger.info(f"Verified API surface with keywords: {found_keywords}")
+        else:
+            logger.warning("No API keywords found in documentation")
+        
+        return {
+            "verified": verified,
+            "keywords_found": found_keywords,
+            "score": 20 if verified else 0,
+        }
+    
+    def verify_self_serve(
+        self,
+        self_serve: Optional[bool],
+        documentation_text: str,
+    ) -> Dict[str, Any]:
+        """
+        Verify self-serve claim against documentation.
+        
+        Detects phrases like Sign Up, Get Started, Developer Portal,
+        Free Trial, Contact Sales, Enterprise Only, Request Access.
+        
+        Args:
+            self_serve: Claimed self-serve status
+            documentation_text: Documentation to search
+            
+        Returns:
+            Dictionary with verification results
+        """
+        doc_lower = documentation_text.lower()
+        
+        has_positive = any(kw in doc_lower for kw in self.SELF_SERVE_POSITIVE)
+        has_negative = any(kw in doc_lower for kw in self.SELF_SERVE_NEGATIVE)
+        
+        # Determine actual status
+        if has_positive and not has_negative:
+            actual = True
+        elif has_negative and not has_positive:
+            actual = False
+        elif has_positive and has_negative:
+            actual = True  # Assume self-serve if both present
+        else:
+            actual = None  # Cannot determine
+        
+        verified = (self_serve == actual) or (self_serve is not None and actual is None)
+        
+        if verified:
+            logger.info(f"Self-serve claim verified: {self_serve}")
+        else:
+            logger.warning(f"Self-serve claim mismatch: claimed {self_serve}, found {actual}")
+        
+        return {
+            "verified": verified,
+            "actual": actual,
+            "score": 20 if verified else 0,
+        }
+    
+    def verify_mcp(
+        self,
+        mcp_support: Optional[bool],
+        documentation_text: str,
+    ) -> Dict[str, Any]:
+        """
+        Verify MCP support claim against documentation.
+        
+        Searches for MCP, Model Context Protocol, Agent, Tool Calling.
+        
+        Args:
+            mcp_support: Claimed MCP support status
+            documentation_text: Documentation to search
+            
+        Returns:
+            Dictionary with verification results
+        """
+        doc_lower = documentation_text.lower()
+        
+        found_keywords = [kw for kw in self.MCP_KEYWORDS if kw in doc_lower]
+        
+        # MCP is supported if keywords found
+        actual = len(found_keywords) > 0
+        
+        verified = mcp_support == actual or mcp_support is None
+        
+        if verified:
+            logger.info(f"MCP claim verified: {mcp_support}")
+        else:
+            logger.warning(f"MCP claim mismatch: claimed {mcp_support}, found {actual}")
+        
+        return {
+            "verified": verified,
+            "keywords_found": found_keywords,
+            "score": 20 if verified else 0,
+        }
+    
+    def verify_evidence(
+        self,
+        evidence_url: Optional[str],
+        app_name: str,
+    ) -> Dict[str, Any]:
+        """
+        Verify evidence URL matches official documentation domain.
+        
+        Args:
+            evidence_url: URL to verify
+            app_name: Application name for context
+            
+        Returns:
+            Dictionary with verification results
+        """
+        if not evidence_url:
+            return {
+                "verified": False,
+                "score": -20,
+                "warnings": ["No evidence URL provided"],
+            }
+        
+        # Convert HttpUrl to string if needed
+        url_str = str(evidence_url)
+        
+        try:
+            parsed = urlparse(url_str)
+            domain = parsed.netloc.lower()
+            
+            # Check if it's a known documentation domain
+            is_doc_domain = any(
+                kw in domain for kw in ["docs.", "developer.", "api.", "documentation."]
+            ) or "github.com" in domain
+            
+            if is_doc_domain:
+                logger.info(f"Evidence URL verified: {evidence_url}")
+                return {"verified": True, "score": 20}
+            
+            logger.warning(f"Evidence URL may not be official docs: {evidence_url}")
+            return {
+                "verified": True,
+                "score": 10,
+                "warnings": ["Evidence URL not from official docs domain"],
+            }
+            
+        except Exception as e:
+            logger.error(f"Failed to parse evidence URL: {e}")
+            return {
+                "verified": False,
+                "score": -20,
+                "warnings": [f"Invalid URL: {str(e)}"],
+            }
+    
+    def verify(
+        self,
+        app: AppResearch,
+        documentation_text: str,
+    ) -> Dict[str, Any]:
+        """
+        Main verification method.
+        
+        Runs all verification checks and returns comprehensive results.
         
         Args:
             app: AppResearch object to verify
-            sources: List of URLs to cross-reference
+            documentation_text: Documentation to cross-reference
             
         Returns:
-            Dictionary containing verification results
+            Dictionary with:
+            - verified_fields: List of verified field names
+            - failed_fields: List of failed field names
+            - warnings: List of warning messages
+            - verification_score: Total score (max 100)
+            - manual_review_required: Boolean
         """
-        # TODO: Implement cross-reference verification
-        # 1. Fetch content from each source
-        # 2. Compare findings
-        # 3. Identify discrepancies
-        # 4. Calculate agreement score
-        pass
-
-    def verify_evidence_url(self, url: str) -> Dict[str, Any]:
-        """
-        Verify evidence URL and extract supporting information.
+        logger.info(f"Starting verification for {app.name}")
         
-        Args:
-            url: Evidence URL to verify
-            
-        Returns:
-            Dictionary containing verification results
-        """
-        # TODO: Implement evidence URL verification
-        # 1. Check URL accessibility
-        # 2. Extract relevant content
-        # 3. Compare with research data
-        # 4. Generate evidence score
-        pass
-
-    # ============================================================================
-    # Quality Scoring
-    # ============================================================================
-
-    def calculate_quality_score(self, app: AppResearch) -> float:
-        """
-        Calculate overall quality score for research data.
+        verified_fields = []
+        failed_fields = []
+        warnings = []
+        total_score = 0
         
-        Args:
-            app: AppResearch object to score
-            
-        Returns:
-            Quality score between 0.0 and 1.0
-        """
-        # TODO: Implement quality scoring
-        # Factors:
-        # - Completeness of data
-        # - Evidence quality
-        # - Source reliability
-        # - Consistency
-        # - Confidence justification
-        pass
-
-    def calculate_confidence_score(
-        self,
-        app: AppResearch,
-        evidence_count: int = 0,
-        source_reliability: float = 0.5,
-    ) -> float:
-        """
-        Calculate adjusted confidence score based on evidence.
+        # Verify auth methods
+        auth_result = self.verify_auth(app.auth_methods, documentation_text)
+        if auth_result["verified"]:
+            verified_fields.append("auth_methods")
+            total_score += auth_result["score"]
+        else:
+            failed_fields.append("auth_methods")
+            if auth_result["failed"]:
+                warnings.append(f"Auth methods not found: {auth_result['failed']}")
         
-        Args:
-            app: AppResearch object
-            evidence_count: Number of supporting evidence sources
-            source_reliability: Average reliability of sources (0.0-1.0)
-            
-        Returns:
-            Adjusted confidence score
-        """
-        # TODO: Implement confidence score calculation
-        # Consider:
-        # - Original confidence score
-        # - Evidence count
-        # - Source reliability
-        # - Data completeness
-        pass
-
-    # ============================================================================
-    # Consistency Checks
-    # ============================================================================
-
-    def check_consistency(self, app: AppResearch) -> List[str]:
-        """
-        Check for internal consistency in research data.
+        # Verify API surface
+        api_result = self.verify_api_surface(app.api_surface, documentation_text)
+        if api_result["verified"]:
+            verified_fields.append("api_surface")
+            total_score += api_result["score"]
+        else:
+            failed_fields.append("api_surface")
         
-        Args:
-            app: AppResearch object to check
-            
-        Returns:
-            List of consistency issues found
-        """
-        issues = []
+        # Verify self-serve
+        self_serve_result = self.verify_self_serve(app.self_serve, documentation_text)
+        if self_serve_result["verified"]:
+            verified_fields.append("self_serve")
+            total_score += self_serve_result["score"]
+        else:
+            failed_fields.append("self_serve")
         
-        # TODO: Implement consistency checks
-        # 1. Category vs description alignment
-        # 2. Auth methods vs self_serve logic
-        # 3. Buildability vs blockers alignment
-        # 4. Confidence vs data completeness
-        # 5. MCP support vs buildability
-        pass
-
-    def check_against_schema(self, app: AppResearch) -> List[str]:
-        """
-        Check research data against schema requirements.
+        # Verify MCP
+        mcp_result = self.verify_mcp(app.mcp_support, documentation_text)
+        if mcp_result["verified"]:
+            verified_fields.append("mcp_support")
+            total_score += mcp_result["score"]
+        else:
+            failed_fields.append("mcp_support")
         
-        Args:
-            app: AppResearch object to check
-            
-        Returns:
-            List of schema violations
-        """
-        # TODO: Implement schema validation
-        # Use Pydantic validation
-        pass
-
-    # ============================================================================
-    # Batch Verification
-    # ============================================================================
-
-    def verify_batch(
-        self,
-        apps: List[AppResearch],
-        parallel: bool = False,
-    ) -> Dict[str, Dict[str, Any]]:
-        """
-        Verify a batch of applications.
+        # Verify evidence
+        evidence_result = self.verify_evidence(app.evidence_url, app.name)
+        if evidence_result["verified"]:
+            verified_fields.append("evidence_url")
+            total_score += evidence_result["score"]
+        else:
+            failed_fields.append("evidence_url")
         
-        Args:
-            apps: List of AppResearch objects to verify
-            parallel: Whether to run verification in parallel
-            
-        Returns:
-            Dictionary mapping app names to verification results
-        """
-        # TODO: Implement batch verification
-        # 1. Validate each app
-        # 2. Cross-reference sources
-        # 3. Calculate quality scores
-        # 4. Generate verification report
-        pass
-
-    def verify_and_update(
-        self,
-        app: AppResearch,
-    ) -> AppResearch:
-        """
-        Verify app and update its verification status.
+        if evidence_result.get("warnings"):
+            warnings.extend(evidence_result["warnings"])
         
-        Args:
-            app: AppResearch object to verify and update
-            
-        Returns:
-            Updated AppResearch object with verification results
-        """
-        # TODO: Implement verify and update
-        # 1. Run all verification checks
-        # 2. Calculate quality score
-        # 3. Update verification_status
-        # 4. Add notes about verification
-        pass
-
-    # ============================================================================
-    # Reporting
-    # ============================================================================
-
-    def generate_verification_report(self) -> Dict[str, Any]:
-        """
-        Generate comprehensive verification report.
+        # Determine if manual review is required
+        manual_review = len(failed_fields) > 2 or total_score < 40
         
-        Returns:
-            Dictionary containing verification summary
-        """
-        # TODO: Implement verification report generation
-        # Include:
-        # - Total apps verified
-        # - Verification status distribution
-        # - Common issues found
-        # - Quality score distribution
-        # - Recommendations
-        pass
-
-    def get_verification_summary(self) -> Dict[str, Any]:
-        """
-        Get summary of verification results.
+        result = {
+            "verified_fields": verified_fields,
+            "failed_fields": failed_fields,
+            "warnings": warnings,
+            "verification_score": min(total_score, 100),
+            "manual_review_required": manual_review,
+        }
         
-        Returns:
-            Dictionary containing verification summary statistics
-        """
-        # TODO: Implement verification summary
-        pass
-
-    def export_verification_results(self, output_path: Path) -> Path:
-        """
-        Export verification results to file.
+        # Log summary
+        if manual_review:
+            logger.warning(f"Manual review required for {app.name}")
+        else:
+            logger.success(f"Verification complete for {app.name}: {total_score}/100")
         
-        Args:
-            output_path: Path to save verification results
-            
-        Returns:
-            Path to exported file
-        """
-        # TODO: Implement verification results export
-        pass
-
-
-class QualityAssurance:
-    """
-    Quality assurance module for research data.
+        return result
     
-    Provides advanced quality checks and metrics for research data.
-    """
-
-    def __init__(self):
-        """Initialize quality assurance module."""
-        self.quality_metrics: Dict[str, Any] = {}
-
-    def assess_data_completeness(self, app: AppResearch) -> Dict[str, Any]:
+    def save_verification_report(
+        self,
+        app_name: str,
+        verification_result: Dict[str, Any],
+    ) -> Path:
         """
-        Assess completeness of research data.
+        Save verification report to output/verified/.
         
         Args:
-            app: AppResearch object to assess
+            app_name: Application name
+            verification_result: Verification result dictionary
             
         Returns:
-            Dictionary containing completeness metrics
+            Path to saved report
         """
-        # TODO: Implement completeness assessment
-        # Check which fields are populated
-        # Calculate completeness percentage
-        pass
-
-    def assess_source_quality(self, sources: List[str]) -> float:
-        """
-        Assess quality of information sources.
+        safe_name = "".join(c if c.isalnum() else "_" for c in app_name)
+        report_path = self.verified_dir / f"{safe_name}_verification.json"
         
-        Args:
-            sources: List of source URLs
-            
-        Returns:
-            Quality score between 0.0 and 1.0
-        """
-        # TODO: Implement source quality assessment
-        # Consider:
-        # - Domain authority
-        # - Content freshness
-        # - Source type (official docs, forums, etc.)
-        pass
-
-    def detect_anomalies(self, apps: List[AppResearch]) -> List[Dict[str, Any]]:
-        """
-        Detect anomalies in research data.
+        with open(report_path, "w", encoding="utf-8") as f:
+            json.dump(verification_result, f, indent=2)
         
-        Args:
-            apps: List of AppResearch objects to check
-            
-        Returns:
-            List of detected anomalies
-        """
-        # TODO: Implement anomaly detection
-        # Look for:
-        # - Unusual confidence scores
-        # - Inconsistent data patterns
-        # - Outliers in categories
-        # - Missing critical information
-        pass
-
-    def generate_quality_report(self, apps: List[AppResearch]) -> Dict[str, Any]:
-        """
-        Generate comprehensive quality report.
-        
-        Args:
-            apps: List of AppResearch objects
-            
-        Returns:
-            Dictionary containing quality metrics and recommendations
-        """
-        # TODO: Implement quality report generation
-        pass
+        logger.info(f"Saved verification report to {report_path}")
+        return report_path
